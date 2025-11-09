@@ -1,80 +1,78 @@
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {Layer} = require("./Layer");
+import { Layer } from "./Layer.js";
 
-const compatWarning = msg => console.warn(msg);
+const compatWarning = (msg) => console.warn(msg);
 
-const compatProperty = function(name, originalName) {
-	return {
-		enumerable: false,
-		get() {
-			compatWarning(`${originalName} is a deprecated property`);
-			return this[name];
-		},
-		set(value) {
-			compatWarning(`${originalName} is a deprecated property`);
-			return this[name] = value;
-		}
-	};
-};
+const compatProperty = (name, originalName) => ({
+  enumerable: false,
+  get() {
+    compatWarning(`${originalName} is a deprecated property`);
+    return this[name];
+  },
+  set(value) {
+    compatWarning(`${originalName} is a deprecated property`);
+    this[name] = value;
+  },
+});
 
-var CompatLayer = (function() {
-	let addSubView = undefined;
-	let removeSubView = undefined;
-	CompatLayer = class CompatLayer extends Layer {
-		static initClass() {
-	
-			this.define("superView", compatProperty("parent", "superView"));
-			this.define("subViews", compatProperty("children", "subViews"));
-			this.define("siblingViews", compatProperty("siblingLayers", "siblingViews"));
-	
-			addSubView = function(layer) { return this.addChild(layer); };
-			removeSubView = function(layer) { return this.removeChild(layer); };
-		}
+export class CompatLayer extends Layer {
+  constructor(options = {}) {
+    if (options.superView) {
+      options.parent = options.superView;
+    }
+    super(options);
+  }
 
-		constructor(options) {
+  addSubView(layer) {
+    return this.addChild(layer);
+  }
+  removeSubView(layer) {
+    return this.removeChild(layer);
+  }
 
-			if (options == null) { options = {}; }
-			if (options.hasOwnProperty("superView")) {
-				options.parent = options.superView;
-			}
+  get superView() {
+    return this.parent;
+  }
+  set superView(value) {
+    compatWarning("superView is deprecated");
+    this.parent = value;
+  }
 
-			super(options);
-		}
-	};
-	CompatLayer.initClass();
-	return CompatLayer;
-})();
+  get subViews() {
+    return this.children;
+  }
+  set subViews(value) {
+    compatWarning("subViews is deprecated"); /* no-op */
+  }
 
-class CompatView extends CompatLayer {
-
-	constructor(options) {
-		if (options == null) { options = {}; }
-		compatWarning("Views are now called Layers");
-		super(options);
-	}
+  get siblingViews() {
+    return this.siblingLayers;
+  }
+  set siblingViews(value) {
+    compatWarning("siblingViews is deprecated"); /* no-op */
+  }
 }
 
-class CompatImageView extends CompatView {}
-
-class CompatScrollView extends CompatView {
-	constructor() {
-		super(...arguments);
-		this.scroll = true;
-	}
+export class CompatView extends CompatLayer {
+  constructor(options = {}) {
+    compatWarning("Views are now called Layers");
+    super(options);
+  }
 }
 
+export class CompatImageView extends CompatView {}
+
+export class CompatScrollView extends CompatView {
+  constructor(...args) {
+    super(...args);
+    this.scroll = true;
+  }
+}
+
+// Expose globally for legacy support
 window.Layer = CompatLayer;
-window.Framer.Layer = CompatLayer;
-
 window.View = CompatView;
 window.ImageView = CompatImageView;
 window.ScrollView = CompatScrollView;
 
-// Utils were utils in Framer 2
+// Utils alias for legacy Framer 2 code
 window.utils = window.Utils;

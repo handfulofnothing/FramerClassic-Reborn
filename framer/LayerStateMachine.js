@@ -1,158 +1,157 @@
-/*
- * decaffeinate suggestions:
- * DS002: Fix invalid constructor
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {BaseClass} = require("./BaseClass");
+import { BaseClass } from "./BaseClass.js";
+import _ from "./Underscore.js"; // keep underscore if your Utils still depends on it
+import { Events } from "./Events.js"; // assuming Events is imported from somewhere
+import { Utils } from "./Utils.js"; // assuming Utils is available
 
-const Cls = (exports.LayerStateMachine = class LayerStateMachine extends BaseClass {
-	static initClass() {
-	
-		this.define("layer",
-			{get() { return this._layer; }});
-	
-		this.define("current",
-			{get() { return this.currentName; }});
-	
-		this.define("previous",
-			{get() { return this.previousName; }});
-	
-	
-		this.define("currentName",
-			{get() { return this._currentName; }});
-	
-		this.define("previousName",
-			{get() { return _.last(this._previousNames) || "default"; }});
-	
-		this.define("stateNames",
-			{get() { return Object.keys(this.states); }});
-	
-		this.define("states",
-			{get() { return this._states; }});
-	}
+export class LayerStateMachine extends BaseClass {
+  static initClass() {
+    this.define("layer", {
+      get() {
+        return this._layer;
+      },
+    });
 
-	constructor(_layer, _states) {
-		this._layer = _layer;
-		this._states = _states;
-		super(...arguments);
+    this.define("current", {
+      get() {
+        return this.currentName;
+      },
+    });
 
-		this.reset();
-	}
+    this.define("previous", {
+      get() {
+        return this.previousName;
+      },
+    });
 
-	switchInstant(stateName) {
-		return this.switchTo(stateName, {instant: true});
-	}
+    this.define("currentName", {
+      get() {
+        return this._currentName;
+      },
+    });
 
-	switchTo(stateName, options) {
-		// Check if the state exists, if not this is a pretty serious error
-		if (options == null) { options = {}; }
-		if (!this.states[stateName]) { throw Error(`No such state: '${stateName}'`); }
+    this.define("previousName", {
+      get() {
+        return _.last(this._previousNames) || "default";
+      },
+    });
 
-		if (stateName === "previous") {
-			stateName = this.previousName;
-		}
+    this.define("stateNames", {
+      get() {
+        return Object.keys(this.states);
+      },
+    });
 
-		// Prep the properties and the options. The options come from the state, and can be overriden
-		// with the function arguments here.
-		const properties = _.clone(this.states[stateName]);
-		options = _.clone(options);
-		if (properties.animationOptions) { options = _.defaults({}, options, properties.animationOptions); }
-		delete properties.animationOptions;
+    this.define("states", {
+      get() {
+        return this._states;
+      },
+    });
+  }
 
-		const stateNameA = this.currentName;
-		const stateNameB = stateName;
+  constructor(layer, states) {
+    super();
+    this._layer = layer;
+    this._states = states;
+    this.reset();
+  }
 
-		// Note: even if the state is the current state we still want to switch because some properties
-		// might be different as they could be set by hand on the layer object.
+  switchInstant(stateName) {
+    return this.switchTo(stateName, { instant: true });
+  }
 
-		// Grab the animation and make state switching have the same events (start, stop, end)
-		const startAnimation = options.start != null ? options.start : true;
-		options.start = false;
-		const animation = this.layer.animate(properties, options);
+  switchTo(stateName, options = {}) {
+    if (!this.states[stateName]) {
+      throw new Error(`No such state: '${stateName}'`);
+    }
 
-		// In the case of instant: true, onStart and onStop are called from within animation.start()
-		// This function is called once after animation.start() or in onStart, whichEver comes first.
-		// We could fix this by adding another event that fires before a delayed animation is started
-		let stateSwitched = false;
-		const switchState = () => {
-			if (stateSwitched) { return; }
-			stateSwitched = true;
-			this._previousNames.push(stateNameA);
-			return this._currentName = stateNameB;
-		};
+    if (stateName === "previous") {
+      stateName = this.previousName;
+    }
 
-		const onStart = () => {
-			this.emit(Events.StateSwitchStart, stateNameA, stateNameB, this);
-			return switchState();
-		};
+    // Clone and merge animation properties
+    const properties = { ...this.states[stateName] };
+    let opts = { ...options };
 
-		const onStop = () => {
-			return this.emit(Events.StateSwitchStop, stateNameA, stateNameB, this);
-		};
+    if (properties.animationOptions) {
+      opts = { ...properties.animationOptions, ...opts };
+      delete properties.animationOptions;
+    }
 
-		const onEnd = () => {
-			const instantProperties = _.difference(
-				_.keys(properties),
-				_.keys(animation.properties));
+    const stateNameA = this.currentName;
+    const stateNameB = stateName;
 
-			for (var k of Array.from(instantProperties)) {
-				this.layer[k] = properties[k];
-			}
-			return this.emit(Events.StateSwitchEnd, stateNameA, stateNameB, this);
-		};
+    const startAnimation = opts.start ?? true;
+    opts.start = false;
 
-		animation.on(Events.AnimationStart, onStart);
-		animation.on(Events.AnimationStop, onStop);
-		animation.on(Events.AnimationEnd, onEnd);
+    const animation = this.layer.animate(properties, opts);
 
-		if (startAnimation) {
-			const started = animation.start();
-			if (!started) {
-				// When the animation didn't even start, the animation events will not be emitted,
-				// so call the handlers manually
-				onStart();
-				onStop();
-				onEnd();
-			}
-		}
+    let stateSwitched = false;
+    const switchState = () => {
+      if (stateSwitched) return;
+      stateSwitched = true;
+      this._previousNames.push(stateNameA);
+      this._currentName = stateNameB;
+    };
 
-		switchState();
+    const onStart = () => {
+      this.emit(Events.StateSwitchStart, stateNameA, stateNameB, this);
+      switchState();
+    };
 
-		return animation;
-	}
+    const onStop = () => {
+      this.emit(Events.StateSwitchStop, stateNameA, stateNameB, this);
+    };
 
-	next(states) {
-		if (!states.length) {
-			states = this.stateNames;
-		}
-		return Utils.arrayNext(states, this.currentName);
-	}
+    const onEnd = () => {
+      const instantProps = _.difference(
+        Object.keys(properties),
+        Object.keys(animation.properties)
+      );
 
-	emit(...args) {
-		super.emit(...arguments);
-		// Also emit this to the layer with self as argument
-		return this._layer.emit(...Array.from(args || []));
-	}
+      for (const k of instantProps) {
+        this.layer[k] = properties[k];
+      }
 
-	reset() {
+      this.emit(Events.StateSwitchEnd, stateNameA, stateNameB, this);
+    };
 
-		for (var k of Array.from(_.keys(this.states))) {
-			if (k !== "default") { delete this.states[k]; }
-		}
+    animation.on(Events.AnimationStart, onStart);
+    animation.on(Events.AnimationStop, onStop);
+    animation.on(Events.AnimationEnd, onEnd);
 
-		this._previousNames = [];
-		return this._currentName = "default";
-	}
+    if (startAnimation) {
+      const started = animation.start();
+      if (!started) {
+        onStart();
+        onStop();
+        onEnd();
+      }
+    }
 
-	// _namedState: (name) ->
-	// 	return _.extend(_.clone(@states[name]), {name: name})
+    switchState();
+    return animation;
+  }
 
-	toInspect(constructor) {
-		return `<${this.constructor.name} id:${this.id} layer:${this.layer.id} current:'${this.currentName}'>`;
-	}
-});
-Cls.initClass();
+  next(states = this.stateNames) {
+    return Utils.arrayNext(states, this.currentName);
+  }
+
+  emit(...args) {
+    super.emit(...args);
+    return this._layer.emit(...args);
+  }
+
+  reset() {
+    for (const key of Object.keys(this.states)) {
+      if (key !== "default") delete this.states[key];
+    }
+
+    this._previousNames = [];
+    this._currentName = "default";
+  }
+
+  toInspect() {
+    return `<${this.constructor.name} id:${this.id} layer:${this.layer.id} current:'${this.currentName}'>`;
+  }
+}
+LayerStateMachine.initClass();

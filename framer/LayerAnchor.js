@@ -1,121 +1,97 @@
-/*
- * decaffeinate suggestions:
- * DS002: Fix invalid constructor
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {EventEmitter} = require("./EventEmitter");
+import { EventEmitter } from "./EventEmitter.js";
+import Utils from "./Utils.js";
 
-/*
-top, right, bottom, left, centerX, centerY, center
-*/
+export const calculateFrame = (layer, rules) => {
+  const val = (rule) => {
+    let value = rules[rule];
+    return typeof value === "function" ? value() : value;
+  };
 
-const calculateFrame = function(layer, rules) {
+  const def = (rule) => typeof val(rule) === "number";
 
-	const val = function(rule) {
-		let value = rules[rule];
-		if (_.isFunction(value)) { value = value(); }
-		return value;
-	};
+  // Center shorthand
+  if (def("center")) {
+    rules.centerX = val("center");
+    rules.centerY = val("center");
+  }
 
-	const def = rule => _.isNumber(val(rule));
+  const parent = layer.parent ?? Screen;
+  const frame = layer.frame;
 
-	if (def("center")) {
-		rules["centerX"] = val("center");
-		rules["centerY"] = val("center");
-	}
+  // Horizontal positioning
+  if (def("left") && def("right")) {
+    frame.x = val("left");
+    frame.width = parent.width - val("left") - val("right");
+  } else if (def("left")) {
+    frame.x = val("left");
+  } else if (def("right")) {
+    frame.x = parent.width - frame.width - val("right");
+  } else if (def("centerX")) {
+    frame.x = (parent.width - frame.width) / 2 + val("centerX");
+  }
 
-	let parentSize = layer.parent;
-	if (parentSize == null) { parentSize = Screen; }
+  // Vertical positioning
+  if (def("top") && def("bottom")) {
+    frame.y = val("top");
+    frame.height = parent.height - val("top") - val("bottom");
+  } else if (def("top")) {
+    frame.y = val("top");
+  } else if (def("bottom")) {
+    frame.y = parent.height - frame.height - val("bottom");
+  } else if (def("centerY")) {
+    frame.y = (parent.height - frame.height) / 2 + val("centerY");
+  }
 
-	const {
-        frame
-    } = layer;
-
-	if (def("left") && def("right")) {
-		frame.x = val("left");
-		frame.width = parentSize.width - val("left") - val("right");
-	} else if (def("left")) {
-		frame.x = val("left");
-	} else if (def("right")) {
-		frame.x = parentSize.width - frame.width - val("right");
-	} else if (def("centerX")) {
-		frame.x = ((parentSize.width / 2) - (frame.width / 2)) + val("centerX");
-	}
-
-	if (def("top") && def("bottom")) {
-		frame.y = val("top");
-		frame.height = parentSize.height - val("top") - val("bottom");
-	} else if (def("top")) {
-		frame.y = val("top");
-	} else if (def("bottom")) {
-		frame.y = parentSize.height - frame.height - val("bottom");
-	} else if (def("centerY")) {
-		frame.y = ((parentSize.height / 2) - (frame.height / 2)) + val("centerY");
-	}
-
-	return frame;
+  return frame;
 };
 
+export class LayerAnchor extends EventEmitter {
+  constructor(layer, rules) {
+    super();
+    this.layer = layer;
+    this._currentListeners = {};
 
-class LayerAnchor extends EventEmitter {
+    this._setupListener = this._setupListener.bind(this);
+    this._addListener = this._addListener.bind(this);
+    this._setNeedsUpdate = this._setNeedsUpdate.bind(this);
 
-	constructor(layer, rules) {
-		this._setupListener = this._setupListener.bind(this);
-		this._addListener = this._addListener.bind(this);
-		this._setNeedsUpdate = this._setNeedsUpdate.bind(this);
-		this.layer = layer;
-		this.updateRules(rules);
-	}
+    this.updateRules(rules);
+  }
 
-		// TODO: We need to remove ourselves when something
-		// changes the frame from the outside like an animation
-		// @layer.on "change:frame", =>
-		// 	print "change:frame"
+  updateRules(rules) {
+    this.rules = this._parseRules(rules);
+    this.layer.on("change:parent", this._setupListener);
+    this._setNeedsUpdate();
+    this._removeListeners();
+    this._setupListener();
+  }
 
-	updateRules(rules) {
-		this.rules = this._parseRules(rules);
-		this.layer.on("change:parent", this._setupListener);
-		this._setNeedsUpdate();
-		// @_needsUpdate = false
-		this._removeListeners();
-		return this._setupListener();
-	}
+  _setupListener() {
+    this._removeListeners();
+    const target = this.layer.parent ?? Canvas;
+    const event = this.layer.parent ? "change:frame" : "resize";
+    this._addListener(target, event, this._setNeedsUpdate);
+  }
 
-	_setupListener() {
+  _addListener(obj, eventName, listener) {
+    obj.on(eventName, listener);
+    if (!this._currentListeners[obj]) this._currentListeners[obj] = [];
+    this._currentListeners[obj].push(eventName);
+  }
 
-		this._removeListeners();
+  _removeListeners() {
+    for (const obj in this._currentListeners) {
+      const events = this._currentListeners[obj];
+      events.forEach((event) => obj.off(event, this._setNeedsUpdate));
+    }
+    this._currentListeners = {};
+  }
 
-		if (this.layer.parent) {
-			return this._addListener(this.layer.parent, "change:frame", this._setNeedsUpdate);
-		} else {
-			return this._addListener(Canvas, "resize", this._setNeedsUpdate);
-		}
-	}
+  _setNeedsUpdate() {
+    this.layer.frame = calculateFrame(this.layer, this.rules);
+  }
 
-	_addListener(obj, eventName, listener) {
-		obj.on(eventName, listener);
-		if (this._currentListeners[obj] == null) { this._currentListeners[obj] = []; }
-		return this._currentListeners[obj].push(eventName);
-	}
-
-	_removeListeners() {
-		for (var obj in this._currentListeners) {
-			var eventName = this._currentListeners[obj];
-			obj.off(eventName, this._setNeedsUpdate);
-		}
-		return this._currentListeners = {};
-	}
-
-	_setNeedsUpdate() {
-		return this.layer.frame = calculateFrame(this.layer, this.rules);
-	}
-
-	_parseRules() {
-		return Utils.parseRect(Utils.arrayFromArguments(arguments));
-	}
+  _parseRules(...args) {
+    return Utils.parseRect(Utils.arrayFromArguments(args));
+  }
 }
-
-
-exports.LayerAnchor = LayerAnchor;

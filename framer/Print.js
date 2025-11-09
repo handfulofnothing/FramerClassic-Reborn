@@ -1,109 +1,117 @@
-/*
- * decaffeinate suggestions:
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const Utils = require("./Utils");
-const {Context} = require("./Context");
+import { Utils } from "./Utils";
+import { Context } from "./Context";
+import { Layer } from "./Layer";
 
 class Printer {
+  constructor() {
+    this.createLayer = this.createLayer.bind(this);
+    this.resize = this.resize.bind(this);
+    this.print = this.print.bind(this);
+    this.scrollToBottom = this.scrollToBottom.bind(this);
 
-	constructor() {
-		this.createLayer = this.createLayer.bind(this);
-		this.resize = this.resize.bind(this);
-		this.print = this.print.bind(this);
-		this.scrollToBottom = this.scrollToBottom.bind(this);
-		this._context = new Context({name: "PrintConsole"});
-		this._context.run(() => Events.wrap(window).addEventListener("resize", this.resize));
-	}
+    this._context = new Context({ name: "PrintConsole" });
 
-	createLayer() {
+    this._context.run(() => {
+      window.addEventListener("resize", this.resize);
+    });
+  }
 
-		if (this._printLayer) { return this._printLayer; }
+  createLayer() {
+    if (this._printLayer) return this._printLayer;
 
-		this._context.run(() => {
-			this._container = new Layer({
-				backgroundColor: null});
-			this._container.style.zIndex = 999; // Always stay on top
+    this._context.run(() => {
+      this._container = new Layer({
+        backgroundColor: null,
+      });
+      this._container.style.zIndex = 999; // Always on top
 
-			this._printLayer = new Layer({
-				parent: this._container});
+      this._printLayer = new Layer({
+        parent: this._container,
+        scrollVertical: true,
+        ignoreEvents: false,
+        html: "",
+        style: {
+          font: "12px/1.35em Menlo, Consolas, monospace",
+          color: "rgba(0, 0, 0, .7)",
+          padding: "8px",
+          paddingBottom: "30px",
+          borderTop: "1px solid #d9d9d9",
+        },
+        opacity: 0.9,
+        visible: true,
+        backgroundColor: "white",
+      });
 
-			this._printLayer.scrollVertical = true;
-			this._printLayer.ignoreEvents = false;
-			this._printLayer.html = "";
-			this._printLayer.style = {
-				"font": "12px/1.35em Menlo, Consolas, monospace",
-				"color": "rgba(0, 0, 0, .7)",
-				"padding": "8px",
-				"padding-bottom": "30px",
-				"border-top": "1px solid #d9d9d9"
-			};
+      this._closeButton = new Layer({
+        parent: this._container,
+        html: `
+          <svg>
+            <g stroke="#B8B8B8">
+              <path d="M1,1 L8,8"></path>
+              <path d="M1,8 L8,1"></path>
+            </g>
+          </svg>
+        `,
+        y: 9,
+        width: 9,
+        height: 9,
+        backgroundColor: null,
+        style: { cursor: "auto" },
+      });
 
-			this._printLayer.opacity = 0.9;
-			this._printLayer.visible = true;
-			this._printLayer.backgroundColor = "white";
+      this._closeButton.onClick(() => this.hide());
+    });
 
-			this._closeButton = new Layer({
-				parent: this._container,
-				html: '<svg><g stroke="#B8B8B8"><path d="M1,1 L8,8"></path><path d="M1,8 L8,1"></path></g></svg>',
-				y: 9,
-				width: 9,
-				height: 9,
-				backgroundColor: null
-			});
-			this._closeButton.style["cursor"] = "auto";
-			return this._closeButton.onClick(() => {
-				return this.hide();
-			});
-		});
-		this.resize();
+    this.resize();
+    return this._printLayer;
+  }
 
-		return this._printLayer;
-	}
+  resize() {
+    if (!this._printLayer) return;
 
-	resize() {
-		if (!this._printLayer) { return; }
-		this._container.width = window.innerWidth;
-		this._container.height = 160;
-		this._container.maxY = window.innerHeight;
+    this._container.width = window.innerWidth;
+    this._container.height = 160;
+    this._container.maxY = window.innerHeight;
 
-		this._printLayer.size = this._container.size;
-		return this._closeButton.maxX = (this._container.maxX - this._closeButton.y) + 1;
-	}
+    this._printLayer.size = this._container.size;
+    this._closeButton.maxX = this._container.maxX - this._closeButton.y + 1;
+  }
 
-	hide() {
-		return this._context.visible = false;
-	}
+  hide() {
+    this._context.visible = false;
+  }
 
-	print(...args) {
+  print(...args) {
+    this.createLayer();
+    this._context.visible = true;
+    const printPrefix = "» ";
 
-		this.createLayer();
-		this._context.visible = true;
-		const printPrefix = "» ";
+    const printNode = document.createElement("div");
+    printNode.style.userSelect = "text";
+    printNode.style.cursor = "auto";
+    printNode.innerHTML =
+      Utils.escape(
+        printPrefix + args.map((obj) => Utils.inspect(obj)).join(", ")
+      ) + "<br>";
 
-		const printNode = document.createElement("div");
-		printNode.style["-webkit-user-select"] = "text";
-		printNode.style["cursor"] = "auto";
-		printNode.innerHTML = _.escape(printPrefix + args.map(obj => Utils.inspect(obj)).join(", ")) + "<br>";
+    this._printLayer._element.appendChild(printNode);
+    this.scrollToBottom();
 
-		this._printLayer._element.appendChild(printNode);
+    // Ensure scroll after DOM updates
+    return Utils.delay(0, this.scrollToBottom);
+  }
 
-		this.scrollToBottom();
-		return Utils.delay(0, this.scrollToBottom);
-	}
-
-	scrollToBottom() {
-		if (!this._printLayer) { return; }
-		return this._printLayer._element.scrollTop = this._printLayer._element.scrollHeight;
-	}
+  scrollToBottom() {
+    if (!this._printLayer) return;
+    this._printLayer._element.scrollTop =
+      this._printLayer._element.scrollHeight;
+  }
 }
 
+// Singleton printer
 let _printer = null;
 
-exports.print = function(...args) {
-	if (_printer == null) { _printer = new Printer; }
-	return _printer.print(...Array.from(args || []));
-};
+export function print(...args) {
+  if (!_printer) _printer = new Printer();
+  return _printer.print(...args);
+}

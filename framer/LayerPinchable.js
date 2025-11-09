@@ -1,134 +1,152 @@
-/*
- * decaffeinate suggestions:
- * DS002: Fix invalid constructor
- * DS102: Remove unnecessary code created because of implicit returns
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const Utils = require("./Utils");
+import Utils from "./Utils.js";
+import { BaseClass } from "./BaseClass.js";
+import { Events as BaseEvents } from "./Events.js";
+import { Gestures } from "./Gestures.js";
 
-const {BaseClass} = require("./BaseClass");
-const {Events} = require("./Events");
-const {Gestures} = require("./Gestures");
+// Extend Events
+export const Events = {
+  ...BaseEvents,
+  PinchStart: "pinchstart",
+  Pinch: "pinch",
+  PinchEnd: "pinchend",
+  RotateStart: "rotatestart",
+  Rotate: "rotate",
+  RotateEnd: "rotateend",
+  ScaleStart: "scalestart",
+  Scale: "scale",
+  ScaleEnd: "scaleend",
+};
 
-Events.PinchStart = "pinchstart";
-Events.Pinch = "pinch";
-Events.PinchEnd = "pinchend";
-Events.RotateStart = "rotatestart";
-Events.Rotate = "rotate";
-Events.RotateEnd = "rotateend";
-Events.ScaleStart = "scalestart";
-Events.Scale = "scale";
-Events.ScaleEnd = "scaleend";
+export class LayerPinchable extends BaseClass {
+  static initClass() {
+    // Properties
+    this.define("enabled", this.simpleProperty("enabled", true));
+    this.define("threshold", this.simpleProperty("threshold", 0));
+    this.define("centerOrigin", this.simpleProperty("centerOrigin", true));
 
+    this.define("scale", this.simpleProperty("scale", true));
+    this.define("scaleIncrements", this.simpleProperty("scaleIncrements", 0));
+    this.define("minScale", this.simpleProperty("minScale", 0));
+    this.define("maxScale", this.simpleProperty("maxScale", Number.MAX_VALUE));
+    this.define("scaleFactor", this.simpleProperty("scaleFactor", 1));
 
-const Cls = (exports.LayerPinchable = class LayerPinchable extends BaseClass {
-	static initClass() {
-	
-		this.define("enabled", this.simpleProperty("enabled", true));
-		this.define("threshold", this.simpleProperty("threshold", 0));
-		this.define("centerOrigin", this.simpleProperty("centerOrigin", true));
-	
-		this.define("scale", this.simpleProperty("scale", true));
-		this.define("scaleIncrements", this.simpleProperty("scaleIncrements", 0));
-		this.define("minScale", this.simpleProperty("minScale", 0));
-		this.define("maxScale", this.simpleProperty("maxScale", Number.MAX_VALUE));
-		this.define("scaleFactor", this.simpleProperty("scaleFactor", 1));
-	
-		this.define("rotate", this.simpleProperty("rotate", true));
-		this.define("rotateIncrements", this.simpleProperty("rotateIncrements", 0));
-		this.define("rotateMin", this.simpleProperty("rotateMin", 0));
-		this.define("rotateMax", this.simpleProperty("rotateMax", 0));
-		this.define("rotateFactor", this.simpleProperty("rotateFactor", 1));
-	}
+    this.define("rotate", this.simpleProperty("rotate", true));
+    this.define("rotateIncrements", this.simpleProperty("rotateIncrements", 0));
+    this.define("rotateMin", this.simpleProperty("rotateMin", 0));
+    this.define("rotateMax", this.simpleProperty("rotateMax", 0));
+    this.define("rotateFactor", this.simpleProperty("rotateFactor", 1));
+  }
 
-	constructor(layer) {
-		this._centerOrigin = this._centerOrigin.bind(this);
-		this._pinchStart = this._pinchStart.bind(this);
-		this._pinch = this._pinch.bind(this);
-		this._pinchEnd = this._pinchEnd.bind(this);
-		this.layer = layer;
-		super(...arguments);
-		this._attach();
-	}
+  constructor(layer) {
+    super();
+    this.layer = layer;
 
-	_attach() {
-		this.layer.on(Gestures.PinchStart, this._pinchStart);
-		this.layer.on(Gestures.Pinch, this._pinch);
-		this.layer.on(Gestures.PinchEnd, this._pinchEnd);
-		return this.layer.on(Gestures.TapStart, this._tapStart);
-	}
+    this._centerOrigin = this._centerOrigin.bind(this);
+    this._pinchStart = this._pinchStart.bind(this);
+    this._pinch = this._pinch.bind(this);
+    this._pinchEnd = this._pinchEnd.bind(this);
+    this._tapStart = this._tapStart?.bind(this);
 
-	_reset() {
-		this._scaleStart = null;
-		this._rotationStart = null;
-		return this._rotationOffset = null;
-	}
+    this._attach();
+  }
 
-	_tapStart(event) {}
-		//@_centerOrigin(event) if @centerOrigin
+  _attach() {
+    this.layer.on(Gestures.PinchStart, this._pinchStart);
+    this.layer.on(Gestures.Pinch, this._pinch);
+    this.layer.on(Gestures.PinchEnd, this._pinchEnd);
+    this.layer.on(Gestures.TapStart, this._tapStart);
+  }
 
-	_centerOrigin(event) {
+  _reset() {
+    this._scaleStart = null;
+    this._rotationStart = null;
+    this._rotationOffset = null;
+  }
 
-		const topInSuperBefore = Utils.convertPoint({}, this.layer, this.layer.superLayer);
-		const pinchLocation = Utils.convertPointFromContext(event.touchCenter, this.layer, true, true);
-		this.layer.originX = pinchLocation.x / this.layer.width;
-		this.layer.originY = pinchLocation.y / this.layer.height;
+  _tapStart(event) {
+    // Placeholder for optional tap behavior
+    // if (this.centerOrigin) this._centerOrigin(event);
+  }
 
-		const topInSuperAfter = Utils.convertPoint({}, this.layer, this.layer.superLayer);
-		const originDelta = {
-			x: topInSuperAfter.x - topInSuperBefore.x,
-			y: topInSuperAfter.y - topInSuperBefore.y
-		};
+  _centerOrigin(event) {
+    const topBefore = Utils.convertPoint({}, this.layer, this.layer.superLayer);
+    const pinchLocation = Utils.convertPointFromContext(
+      event.touchCenter,
+      this.layer,
+      true,
+      true
+    );
 
-		this.layer.x -= originDelta.x;
-		return this.layer.y -= originDelta.y;
-	}
+    this.layer.originX = pinchLocation.x / this.layer.width;
+    this.layer.originY = pinchLocation.y / this.layer.height;
 
-	_pinchStart(event) {
-		this._reset();
-		if (this.centerOrigin) { this._centerOrigin(event); }
-		return this.normalizeRotation = Utils.rotationNormalizer();
-	}
+    const topAfter = Utils.convertPoint({}, this.layer, this.layer.superLayer);
+    const originDelta = {
+      x: topAfter.x - topBefore.x,
+      y: topAfter.y - topBefore.y,
+    };
 
-	_pinch(event) {
+    this.layer.x -= originDelta.x;
+    this.layer.y -= originDelta.y;
+  }
 
-		if (event.fingers !== 2) { return; }
-		if (!this.enabled) { return; }
-		if (!(event.touchDistance > this.threshold)) { return; }
+  _pinchStart(event) {
+    this._reset();
+    if (this.centerOrigin) this._centerOrigin(event);
+    this.normalizeRotation = Utils.rotationNormalizer();
+  }
 
-		if (this.scale) {
-			if (this._scaleStart == null) { this._scaleStart = this.layer.scale; }
-			let scale = (((event.scale - 1) * this.scaleFactor) + 1) * this._scaleStart;
+  _pinch(event) {
+    if (
+      event.fingers !== 2 ||
+      !this.enabled ||
+      event.touchDistance <= this.threshold
+    )
+      return;
 
-			if (this.minScale && this.maxScale) {
-				scale = Utils.clamp(scale, this.minScale, this.maxScale);
-			} else if (this.minScale) {
-				scale = Utils.clamp(scale, this.minScale, 1000000);
-			} else if (this.maxScale) {
-				scale = Utils.clamp(scale, 0.00001, this.maxScale);
-			}
+    // Handle scaling
+    if (this.scale) {
+      if (this._scaleStart == null) this._scaleStart = this.layer.scale;
+      let scale = ((event.scale - 1) * this.scaleFactor + 1) * this._scaleStart;
 
-			if (this.scaleIncrements) { scale = Utils.nearestIncrement(scale, this.scaleIncrements); }
-			this.layer.scale = scale;
-			this.emit(Events.Scale, event);
-		}
+      if (this.minScale && this.maxScale) {
+        scale = Utils.clamp(scale, this.minScale, this.maxScale);
+      } else if (this.minScale) {
+        scale = Utils.clamp(scale, this.minScale, 1e6);
+      } else if (this.maxScale) {
+        scale = Utils.clamp(scale, 1e-5, this.maxScale);
+      }
 
-		if (this.rotate) {
-			if (this._rotationStart == null) { this._rotationStart = this.layer.rotation; }
-			if (this._rotationOffset == null) { this._rotationOffset = event.rotation; }
-			let rotation = (event.rotation - this._rotationOffset) + this._rotationStart;
-			rotation = rotation * this.rotateFactor;
-			rotation = this.normalizeRotation(rotation);
-			if (this.rotateMin && this.rotateMax) { rotation = Utils.clamp(rotation, this.rotateMin, this.rotateMax); }
-			if (this.rotateIncrements) { rotation = Utils.nearestIncrement(rotation, this.rotateIncrements); }
-			return this.layer.rotation = rotation;
-		}
-	}
+      if (this.scaleIncrements)
+        scale = Utils.nearestIncrement(scale, this.scaleIncrements);
+      this.layer.scale = scale;
+      this.emit(Events.Scale, event);
+    }
 
-	_pinchEnd(event) {
-		return this._reset();
-	}
-});
-Cls.initClass();
+    // Handle rotation
+    if (this.rotate) {
+      if (this._rotationStart == null)
+        this._rotationStart = this.layer.rotation;
+      if (this._rotationOffset == null) this._rotationOffset = event.rotation;
+
+      let rotation =
+        event.rotation - this._rotationOffset + this._rotationStart;
+      rotation *= this.rotateFactor;
+      rotation = this.normalizeRotation(rotation);
+
+      if (this.rotateMin && this.rotateMax)
+        rotation = Utils.clamp(rotation, this.rotateMin, this.rotateMax);
+      if (this.rotateIncrements)
+        rotation = Utils.nearestIncrement(rotation, this.rotateIncrements);
+
+      this.layer.rotation = rotation;
+      this.emit(Events.Rotate, event);
+    }
+  }
+
+  _pinchEnd(event) {
+    this._reset();
+  }
+}
+
+LayerPinchable.initClass();

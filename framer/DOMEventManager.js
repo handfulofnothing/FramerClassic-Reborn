@@ -1,86 +1,69 @@
-/*
- * decaffeinate suggestions:
- * DS002: Fix invalid constructor
- * DS102: Remove unnecessary code created because of implicit returns
- * DS205: Consider reworking code to avoid use of IIFEs
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {_} = require("./Underscore");
-const {EventEmitter} = require("./EventEmitter");
-
-const Utils = require("./Utils");
+import _ from "./Underscore.js";
+import { EventEmitter } from "./EventEmitter.js";
+import * as Utils from "./Utils.js";
 
 let EventManagerIdCounter = 1;
 
 class DOMEventManagerElement extends EventEmitter {
-	static initClass() {
-	
-		// Keep the DOM API working
-		this.prototype.addEventListener = this.prototype.addListener;
-		this.prototype.removeEventListener = this.prototype.removeListener;
-	
-		// Keep the Node API working
-		this.prototype.on = this.prototype.addListener;
-		this.prototype.off = this.prototype.removeListener;
-	}
+  static initClass() {
+    // Keep the DOM API working
+    this.prototype.addEventListener = this.prototype.addListener;
+    this.prototype.removeEventListener = this.prototype.removeListener;
 
-	constructor(element) {
-		this.element = element;
-	}
+    // Keep the Node API working
+    this.prototype.on = this.prototype.addListener;
+    this.prototype.off = this.prototype.removeListener;
+  }
 
-	addListener(eventName, listener, capture) {
-		if (capture == null) { capture = false; }
-		listener.capture = capture; // Make sure we store capture too
-		super.addListener(eventName, listener);
-		return this.element.addEventListener(eventName, listener, capture);
-	}
+  constructor(element) {
+    super();
+    this.element = element;
+  }
 
-	removeListener(eventName, listener, capture) {
-		if (capture == null) { capture = false; }
-		super.removeListener(eventName, listener);
-		return this.element.removeEventListener(eventName, listener, listener.capture);
-	}
+  addListener(eventName, listener, capture = false) {
+    listener.capture = capture; // store capture too
+    super.addListener(eventName, listener);
+    this.element.addEventListener(eventName, listener, capture);
+  }
+
+  removeListener(eventName, listener, capture = false) {
+    super.removeListener(eventName, listener);
+    this.element.removeEventListener(eventName, listener.capture);
+  }
 }
+
 DOMEventManagerElement.initClass();
 
+export class DOMEventManager {
+  constructor() {
+    this.wrap = this.wrap.bind(this);
+    this.remove = this.remove.bind(this);
+    this._elements = {};
+  }
 
-exports.DOMEventManager = class DOMEventManager {
+  wrap(element) {
+    if (!element._eventManagerId) {
+      element._eventManagerId = EventManagerIdCounter++;
+    }
 
-	constructor(element) {
-		this.wrap = this.wrap.bind(this);
-		this.remove = this.remove.bind(this);
-		this._elements = {};
-	}
+    if (!this._elements[element._eventManagerId]) {
+      this._elements[element._eventManagerId] = new DOMEventManagerElement(
+        element
+      );
+    }
 
-	wrap(element) {
+    return this._elements[element._eventManagerId];
+  }
 
-		if (!element._eventManagerId) {
-			element._eventManagerId = EventManagerIdCounter++;
-		}
+  remove(element) {
+    if (!element._eventManagerId) return;
+    delete this._elements[element._eventManagerId];
+    element._eventManagerId = 0;
+  }
 
-		if (!this._elements[element._eventManagerId]) {
-			this._elements[element._eventManagerId] = new DOMEventManagerElement(element);
-		}
-
-		return this._elements[element._eventManagerId];
-	}
-
-	remove(element) {
-		if (!element._eventManagerId) { return; }
-		delete this._elements[element._eventManagerId];
-		return element._eventManagerId = 0;
-	}
-
-	reset() {
-		return (() => {
-			const result = [];
-			for (var element in this._elements) {
-				var elementEventManager = this._elements[element];
-				result.push(elementEventManager.removeAllListeners());
-			}
-			return result;
-		})();
-	}
-};
+  reset() {
+    for (const key in this._elements) {
+      this._elements[key].removeAllListeners();
+    }
+  }
+}

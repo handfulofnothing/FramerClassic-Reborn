@@ -1,84 +1,194 @@
-window.chai = require("chai")
+import gulp from 'gulp';
+import mochaPhantomJS from 'gulp-mocha-phantomjs';
+import istanbulReport from 'gulp-istanbul-report';
+import webpack from 'webpack';
+import rename from 'gulp-rename';
+import template from 'gulp-template';
+import log from 'fancy-log';
+import colors from 'ansi-colors';
+import { exec } from 'child_process';
+import coffeelint from 'gulp-coffeelint';
+import { promisify } from 'util';
 
+const execAsync = promisify(exec);
+const DEBUG_TARGET = process.env.TARGET ?? 'extras/Studio.framer';
 
-previousReset = Framer.resetDefaults
+//###############################################################################
+// Base webpack config
 
-Framer.resetDefaults = ->
-	previousReset()
-	# We don't want to update all the tests if we change these
-	Framer.Defaults.Layer.width = 100
-	Framer.Defaults.Layer.height = 100
-	Framer.Defaults.Animation.time = 0.035
-Framer.resetDefaults()
+const WEBPACK = {
+  entry: './framer/Framer.coffee',
+  module: {
+    rules: [{ test: /\.coffee$/, loader: 'coffee-loader' }]
+  },
+  resolve: {
+    extensions: ['.web.coffee', '.web.js', '.coffee', '.js']
+  },
+  devtool: 'source-map',
+  cache: true,
+  stats: 'errors-only'
+};
 
+//###############################################################################
+// Utilities
 
-Framer.Device = new Framer.DeviceView()
+const logTask = (task, ...args) => log(`[${colors.yellow(task)}]`, ...args);
 
-window.TESTING = true
-window.console.debug = (v) ->
-window.console.warn = (v) ->
+const command = async (cmd) => {
+  const { stdout } = await execAsync(cmd, { cwd: __dirname });
+  return stdout.trim();
+};
 
-chai.should()
-chai.config.truncateThreshold = 2
-chai.config.showDiff = true
+const versionInfo = async () => {
+  const [branch, hash, build] = await Promise.all([
+    command('git rev-parse --abbrev-ref HEAD'),
+    command('git describe --always --dirty'),
+    command('git rev-list --count HEAD')
+  ]);
 
-chai.Assertion.addChainableMethod 'equalColor', (color) ->
-	expected = color
-	actual = @_obj
+  return {
+    branch: process.env.WERCKER_GIT_BRANCH ?? branch,
+    hash: (process.env.WERCKER_GIT_BRANCH ? hash.replace('-dirty', '') : hash),
+    build,
+    date: Math.floor(Date.now() / 1000)
+  };
+};
 
-	return @assert Color.equal(expected, actual),
-		"expected #{this._obj} to equal #{color}",
-		"expected #{this._obj} to not equal #{color}"
+const webpackDev = (name, config) => {
+  return new Promise((resolve, reject) => {
+    webpack(config).run((err, stats) => {
+      if (err) return reject(err);
+      logTask(name, colors.green('All ok'));
+      resolve();
+    });
+  });
+};
 
-chai.Assertion.addChainableMethod 'equalShadow', (shadow) ->
-	expected = shadow
-	actual = @_obj
+//###############################################################################
+// Gulp tasks
 
-	equal = true
-	for key, value of expected
-		if Color.isColor(value)
-			equal = equal and Color.equal(value, actual[key])
-		else
-			equal = equal and _.eq(value, actual[key])
+export const lint = () =>
+  gulp.src([
+    './framer/**/*.coffee',
+    '!./framer/Version.coffee.template',
+    './test/tests/**',
+    './test/tests.coffee',
+    './gulpfile.coffee',
+    'scripts/site.coffee'
+  ])
+    .pipe(coffeelint())
+    .pipe(coffeelint.reporter());
 
-	return @assert equal,
-		"expected #{Utils.inspect(this._obj)} to equal #{Utils.inspect(shadow)}",
-		"expected #{Utils.inspect(this._obj)} to not equal #{Utils.inspect(shadow)}"
+export const version = async () => {
+  const info = await versionInfo();
+  logTask('version', `${info.branch}/${info.hash} @${info.build}`);
 
+  return gulp.src('framer/Version.coffee.template')
+    .pipe(template(info))
+    .pipe(rename({ basename: 'Version', extname: '.coffee' }))
+    .pipe(gulp.dest('build'));
+};
 
-mocha.setup({ui: "bdd", bail: true, reporter: "dot"})
-mocha.globals(["__import__"])
+export const webpackDebug = async () => {
+  await version();
+  const config = {
+    ...WEBPACK,
+    mode: 'development',
+    output: {
+      filename: 'build/framer.debug.js',
+      sourceMapFilename: '[file].map?hash=[hash]'
+    }
+  };
+  await webpackDev('webpack:debug', config);
+  await command(`cp build/framer.debug.* '${DEBUG_TARGET}/framer/'`);
+};
 
-window.print = (args...) ->
-	console.log "\n»", args.map((obj) -> Utils.inspect(obj)).join(", ")
+export const webpackRelease = async () => {
+  await version();
+  const config = {
+    ...WEBPACK,
+    mode: 'production',
+    output: {
+      filename: 'build/framer.js',
+      sourceMapFilename: '[file].map',
+      pathinfo: false
+    },
+    optimization: {
+      minimize: true
+    }
+  };
+  await webpackDev('webpack:release', config);
+};
 
-require "./tests/AlignTest"
-require "./tests/CurvesTest"
-require "./tests/EventEmitterTest"
-require "./tests/UtilsTest"
-require "./tests/BaseClassTest"
-require "./tests/LayerTest"
-require "./tests/LayerEventsTest"
-require "./tests/LayerStatesTest"
-require "./tests/LayerStatesBackwardsTest"
-require "./tests/LayerGesturesTest"
-require "./tests/VideoLayerTest"
-require "./tests/ImporterTest"
-require "./tests/LayerAnimationTest"
-require "./tests/LayerDraggableTest"
-require "./tests/ContextTest"
-require "./tests/ScrollComponentTest"
-require "./tests/TextLayerTest"
-require "./tests/SVGLayerTest"
-require "./tests/SVGPathTest"
-require "./tests/PageComponentTest"
-require "./tests/VersionTest"
-require "./tests/ColorTest"
-require "./tests/GradientTest"
-require "./tests/DeviceComponentTest"
-require "./tests/SliderComponentTest"
-require "./tests/RangeSliderComponentTest"
-require "./tests/FlowComponentTest"
-require "./tests/PreloaderTest"
+export const webpackTests = async () => {
+  await webpackDebug();
+  const config = {
+    ...WEBPACK,
+    entry: './test/tests.coffee',
+    output: {
+      filename: 'test/phantomjs/tests.js'
+    },
+    mode: 'development'
+  };
+  await webpackDev('webpack:tests', config);
+};
 
-mocha.run()
+export const webpackCoverage = async () => {
+  await version();
+  const config = {
+    ...WEBPACK,
+    entry: './build/instrumented/Framer.js',
+    output: {
+      filename: 'build/framer.debug.js'
+    },
+    mode: 'development'
+  };
+  await webpackDev('webpack:coverage', config);
+};
+
+export const test = gulp.series(webpackTests, lint, () =>
+  gulp.src('test/phantomjs/index.html')
+    .pipe(mochaPhantomJS({
+      reporter: 'dot',
+      phantomjs: {
+        viewportSize: { width: 400, height: 300 },
+        useColors: true,
+        loadImages: false
+      }
+    }))
+);
+
+export const coverage = gulp.series(version, webpackCoverage, webpackTests, () => {
+  const coverageFile = 'build/coverage/coverage.json';
+  return gulp.src('test/phantomjs/index.html')
+    .pipe(mochaPhantomJS({
+      reporter: 'dot',
+      phantomjs: {
+        hooks: 'mocha-phantomjs-istanbul',
+        coverageFile,
+        viewportSize: { width: 400, height: 300 },
+        useColors: true,
+        loadImages: false
+      }
+    }))
+    .on('finish', () => {
+      gulp.src(coverageFile)
+        .pipe(istanbulReport({
+          reporterOpts: { dir: './build/coverage' },
+          reporters: [
+            'text',
+            { name: 'lcov', file: 'lcov.info' },
+            { name: 'json', file: 'coverage-final.json' },
+            { name: 'clover', file: 'clover.xml' }
+          ]
+        }));
+      console.log('done');
+    });
+});
+
+export const watch = gulp.series(test, () =>
+  gulp.watch(['./*.coffee', 'framer/**', 'test/tests/**', '!Version.coffee'], test)
+);
+
+// Default task
+export default watch;

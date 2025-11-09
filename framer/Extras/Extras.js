@@ -1,7 +1,15 @@
-// exports.Hints = require "./Hints"
-exports.TouchEmulator = require("./TouchEmulator");
-exports.MobileScrollFix = require("./MobileScrollFix");
-exports.ErrorDisplay = require("./ErrorDisplay");
-exports.OmitNew = require("./OmitNew");
-exports.Hints = require("./Hints");
-exports.Preloader = require("./Preloader");
+import TouchEmulator from "./TouchEmulator";
+import MobileScrollFix from "./MobileScrollFix";
+import ErrorDisplay from "./ErrorDisplay";
+import OmitNew from "./OmitNew";
+import Hints from "./Hints";
+import Preloader from "./Preloader";
+
+export {
+  TouchEmulator,
+  MobileScrollFix,
+  ErrorDisplay,
+  OmitNew,
+  Hints,
+  Preloader,
+};

@@ -1,69 +1,72 @@
-/*
- * decaffeinate suggestions:
- * DS002: Fix invalid constructor
- * DS102: Remove unnecessary code created because of implicit returns
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {BaseClass} = require("./BaseClass");
-const {Events} = require("./Events");
+import { BaseClass } from "./BaseClass.js";
+import { Events } from "./Events.js";
 
 Events.MIDICommand = "midiCommand";
 
-class MIDIInput extends BaseClass {
-	constructor(...args) {
-		this._requestResolved = this._requestResolved.bind(this);
-		this._onmidimessage = this._onmidimessage.bind(this);
-		super(...args);
-	}
+export class MIDIInput extends BaseClass {
+  constructor(...args) {
+    super(...args);
+    this._requestResolved = this._requestResolved.bind(this);
+    this._onMidiMessage = this._onMidiMessage.bind(this);
+    this._requestRejected = this._requestRejected.bind(this);
+  }
 
-	static initClass() {
-	
-		this.define("enabled", {
-			get() { return (this._inputs != null ? this._inputs.length : undefined) || this._request; },
-			set(value) {
-				if (value === this.enabled) { return; }
-				if (!window.parent.navigator.requestMIDIAccess) { return this._requestRejected(); }
-				if (value) {
-					return this._request = window.parent.navigator.requestMIDIAccess().then(this._requestResolved, this._requestRejected);
-				} else {
-					if (this._inputs != null) {
-						this._inputs.map(close);
-					}
-					this._request = null;
-					return this._inputs = [];
-				}
-			}
-		});
-	}
+  static initClass() {
+    this.define("enabled", {
+      get() {
+        return (this._inputs?.length ?? undefined) || this._request;
+      },
+      set(value) {
+        if (value === this.enabled) return;
 
-	// Success handlers
+        if (!navigator.requestMIDIAccess) {
+          return this._requestRejected();
+        }
 
-	_requestResolved(access) {
-		if (this._inputs == null) { this._inputs = []; }
-		return access.inputs.forEach(input => {
-			this._inputs.push(input);
-			return input.onmidimessage = this._onmidimessage(input.id);
-		});
-	}
+        if (value) {
+          this._request = navigator
+            .requestMIDIAccess()
+            .then(this._requestResolved, this._requestRejected);
+        } else {
+          this._inputs?.forEach((input) => input.close?.());
+          this._request = null;
+          this._inputs = [];
+        }
+      },
+    });
+  }
 
-	// Failure handlers
+  // Success handler
+  _requestResolved(access) {
+    this._inputs = [];
+    access.inputs.forEach((input) => {
+      this._inputs.push(input);
+      input.onmidimessage = this._onMidiMessage(input.id);
+    });
+  }
 
-	_requestRejected(error) {
-		throw Error(`Requesting MIDI access failed: ${error != null ? error : "not supported by browser"}`);
-	}
+  // Failure handler
+  _requestRejected(error) {
+    throw new Error(
+      `Requesting MIDI access failed: ${error ?? "not supported by browser"}`
+    );
+  }
 
-	// Event handlers
+  // Event handler
+  _onMidiMessage(sourceID) {
+    return (message) => {
+      this.emit(Events.MIDICommand, sourceID, message.timeStamp, message.data);
+    };
+  }
 
-	_onmidimessage(sourceID) {
-		return message => this.emit(Events.MIDICommand, sourceID, message.timeStamp, message.data);
-	}
-
-	// Event shortcuts
-
-	onCommand(cb) { return this.on(Events.MIDICommand, cb); }
+  // Event shortcut
+  onCommand(cb) {
+    return this.on(Events.MIDICommand, cb);
+  }
 }
+
+// Initialize static properties
 MIDIInput.initClass();
 
-exports.MIDIInput = new MIDIInput;
+// Export a singleton instance
+export const midiInput = new MIDIInput();

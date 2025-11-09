@@ -1,44 +1,37 @@
-/*
- * decaffeinate suggestions:
- * DS002: Fix invalid constructor
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {Layer} = require("./Layer");
+import { Layer } from "./Layer.js";
 
-const Cls = (exports.VideoLayer = class VideoLayer extends Layer {
-	static initClass() {
-	
-		this.define("video", {
-			get() { return this.player.src; },
-			set(video) { return this.player.src = video; }
-		}
-		);
-	}
+export class VideoLayer extends Layer {
+  constructor(options = {}) {
+    // Create video element before adding options
+    super(options);
 
-	constructor(options) {
+    this.player = document.createElement("video");
+    this.player.setAttribute("webkit-playsinline", "true");
+    this.player.setAttribute("playsinline", "");
+    this.player.style.width = "100%";
+    this.player.style.height = "100%";
 
-		// We need the player to exist before we add the options
-		if (options == null) { options = {}; }
-		this.player = document.createElement("video");
-		this.player.setAttribute("webkit-playsinline", "true");
-		this.player.setAttribute("playsinline", "");
-		this.player.style.width = "100%";
-		this.player.style.height = "100%";
+    // Wrap with DOM event manager for .on/.off
+    this.player.on = this._context?.domEventManager?.wrap(
+      this.player
+    ).addEventListener;
+    this.player.off = this._context?.domEventManager?.wrap(
+      this.player
+    ).removeEventListener;
 
-		super(options);
+    // Set initial video if provided
+    if (options.video) this.video = options.video;
 
-		// Make it work with .on and .off
-		// https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Media_events
-		this.player.on = this._context.domEventManager.wrap(this.player).addEventListener;
-		this.player.off = this._context.domEventManager.wrap(this.player).removeEventListener;
+    // Append player to the layer element
+    this._element.appendChild(this.player);
+  }
+}
 
-		this.video = options.video;
-
-		this._element.appendChild(this.player);
-	}
+VideoLayer.define("video", {
+  get() {
+    return this.player.src;
+  },
+  set(video) {
+    this.player.src = video;
+  },
 });
-Cls.initClass();
-
-	// TODO: Maybe add event handler shortcuts here too

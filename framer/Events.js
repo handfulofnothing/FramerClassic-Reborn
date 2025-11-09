@@ -1,31 +1,26 @@
-/*
- * decaffeinate suggestions:
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const Utils = require("./Utils");
+import Utils from "./Utils.js";
+import _ from "./Underscore.js";
+import { Gestures } from "./Gestures.js";
 
-const {_} = require("./Underscore");
-const {Gestures} = require("./Gestures");
+const Events = {
+  // Standard DOM events
+  MouseUp: "mouseup",
+  MouseDown: "mousedown",
+  MouseOver: "mouseover",
+  MouseOut: "mouseout",
+  MouseEnter: "mouseenter",
+  MouseLeave: "mouseleave",
+  MouseMove: "mousemove",
+  MouseWheel: "mousewheel",
+  DoubleClick: "dblclick",
+  MouseDoubleClick: "dblclick", // Alias
+};
 
-const Events = {};
-
-
-// Standard dom events
-Events.MouseUp = "mouseup";
-Events.MouseDown = "mousedown";
-Events.MouseOver = "mouseover";
-Events.MouseOut = "mouseout";
-Events.MouseEnter = "mouseenter";
-Events.MouseLeave = "mouseleave";
-Events.MouseMove = "mousemove";
-Events.MouseWheel = "mousewheel";
-Events.DoubleClick = "dblclick";
-Events.MouseDoubleClick = "dblclick"; // Alias for consistent naming
-
-const supportsPointerEvents = (window.onpointerdown === null) && (window.onpointermove === null) && (window.onpointerup === null);
+// Pointer support detection
+const supportsPointerEvents =
+  window.onpointerdown === null &&
+  window.onpointermove === null &&
+  window.onpointerup === null;
 
 Events.PointerUp = "pointerup";
 Events.PointerDown = "pointerdown";
@@ -33,40 +28,38 @@ Events.PointerOver = "pointerover";
 Events.PointerOut = "pointerout";
 Events.PointerMove = "pointermove";
 
-// Standard touch events
-Events.enableEmulatedTouchEvents = function(enable) {
-	// never emulate if the browsers supports pointer events
-	if (enable == null) { enable = true; }
-	if (supportsPointerEvents) { return; }
-	if (enable) {
-		Events.TouchStart = Events.MouseDown;
-		Events.TouchEnd = Events.MouseUp;
-		Events.TouchMove = Events.MouseMove;
-		// When we are simulating touch events, click should use the simulated touch-event
-		return Events.Click = "touchend";
-	} else {
-		Events.TouchStart = "touchstart";
-		Events.TouchEnd = "touchend";
-		Events.TouchMove = "touchmove";
-		// When not simulating, click should be based on if touch is supported or not
-		return Events.Click = Utils.isTouch() ? "touchend" : "mouseup";
-	}
+// Touch events
+Events.enableEmulatedTouchEvents = (enable = true) => {
+  if (supportsPointerEvents) return;
+
+  if (enable) {
+    Events.TouchStart = Events.MouseDown;
+    Events.TouchEnd = Events.MouseUp;
+    Events.TouchMove = Events.MouseMove;
+    Events.Click = "touchend";
+  } else {
+    Events.TouchStart = "touchstart";
+    Events.TouchEnd = "touchend";
+    Events.TouchMove = "touchmove";
+    Events.Click = Utils.isTouch() ? "touchend" : "mouseup";
+  }
 };
 
-// Let's make sure the touch events work on desktop too
+// Ensure touch events work on desktop too
 Events.enableEmulatedTouchEvents(!Utils.isTouch());
 
+// Use pointer events if supported
 if (supportsPointerEvents) {
-	Events.MouseUp = Events.PointerUp;
-	Events.MouseDown = Events.PointerDown;
-	Events.MouseOver = Events.PointerOver;
-	Events.MouseOut = Events.PointerOut;
-	Events.MouseMove = Events.PointerMove;
-	Events.TouchStart = Events.PointerDown;
-	Events.TouchEnd = Events.PointerUp;
-	Events.TouchMove = Events.PointerMove;
-	// Use pointerEvents for click
-	Events.Click = Events.PointerUp;
+  Events.MouseUp = Events.PointerUp;
+  Events.MouseDown = Events.PointerDown;
+  Events.MouseOver = Events.PointerOver;
+  Events.MouseOut = Events.PointerOut;
+  Events.MouseMove = Events.PointerMove;
+
+  Events.TouchStart = Events.PointerDown;
+  Events.TouchEnd = Events.PointerUp;
+  Events.TouchMove = Events.PointerMove;
+  Events.Click = Events.PointerUp;
 }
 
 // Animation events
@@ -95,34 +88,35 @@ Events.ImageLoaded = "imageload";
 Events.ImageLoadError = "imageerror";
 Events.ImageLoadCancelled = "imagecancelled";
 
-// Sensor Events
+// Sensor events
 Events.DeviceOrientation = "deviceorientation";
 Events.DeviceMotion = "devicemotion";
 
-// Add all gesture events
-_.extend(Events, Gestures);
+// Merge gesture events
+Object.assign(Events, Gestures);
 
-// Extract touch events for any event
-Events.touchEvent = function(event) {
-	let touchEvent = event.touches != null ? event.touches[0] : undefined;
-	if (touchEvent == null) { touchEvent = event.changedTouches != null ? event.changedTouches[0] : undefined; }
-	if (touchEvent == null) { touchEvent = event; }
-	return touchEvent;
+// Extract touch from any event
+Events.touchEvent = (event) => {
+  return event.touches?.[0] ?? event.changedTouches?.[0] ?? event;
 };
 
-Events.wrap = element => Framer.CurrentContext.domEventManager.wrap(element);
+// Wrapping for Framer
+Events.wrap = (element) => Framer.CurrentContext.domEventManager.wrap(element);
 
-Events.isGesture = eventName => Array.from(Gestures).includes(eventName);
+// Check if an event is a gesture
+Events.isGesture = (eventName) => Object.values(Gestures).includes(eventName);
 
-const interactiveEvents = _.values(Gestures).concat([
-	Events.TouchStart,
-	Events.TouchEnd,
-	Events.MouseUp,
-	Events.MouseDown,
-	Events.MouseWheel,
-	Events.DoubleClick
-]);
+// Interactive events
+const interactiveEvents = [
+  ...Object.values(Gestures),
+  Events.TouchStart,
+  Events.TouchEnd,
+  Events.MouseUp,
+  Events.MouseDown,
+  Events.MouseWheel,
+  Events.DoubleClick,
+];
 
-Events.isInteractive = eventName => Array.from(interactiveEvents).includes(eventName);
+Events.isInteractive = (eventName) => interactiveEvents.includes(eventName);
 
-exports.Events = Events;
+export { Events };

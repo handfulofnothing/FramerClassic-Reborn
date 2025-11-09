@@ -1,48 +1,43 @@
-/*
- * decaffeinate suggestions:
- * DS202: Simplify dynamic range loops
- * DS206: Consider reworking classes to avoid initClass
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const Cls = (exports.Animator = class Animator {
-	static initClass() {
-	
-		`\
-The animator class is a very simple class that
-	- Takes a set of input values at setup({input values})
-	- Emits an output value for progress (0 -> 1) in value(progress)\
-`;
-	}
+export class Animator {
+  static initClass() {
+    // Static initialization or metadata can go here if needed
+  }
 
-	constructor(options) {
-		if (options == null) { options = {}; }
-		this.setup(options);
-	}
+  constructor(options = {}) {
+    this.setup(options);
+  }
 
-	setup(options) {
-		throw Error("Not implemented");
-	}
+  setup(options) {
+    throw new Error("Not implemented");
+  }
 
-	next(delta) {
-		throw Error("Not implemented");
-	}
+  /**
+   * Return the next value based on delta progress
+   * Must be implemented by subclasses
+   */
+  next(delta) {
+    throw new Error("Not implemented");
+  }
 
-	finished() {
-		throw Error("Not implemented");
-	}
+  finished() {
+    throw new Error("Not implemented");
+  }
 
-	values(delta, limit) {
-		if (delta == null) { delta = 1/60; }
-		if (limit == null) { limit = 100; }
-		const values = [];
-		for (let i = 0, end = limit, asc = 0 <= end; asc ? i <= end : i >= end; asc ? i++ : i--) {
-			values.push(this.next(delta));
-			if (this.finished()) {
-				break;
-			}
-		}
-		return values;
-	}
-});
-Cls.initClass();
+  /**
+   * Generate an array of values by repeatedly calling next()
+   * @param {number} delta Time step per frame
+   * @param {number} limit Maximum number of frames to calculate
+   * @returns {Array} Array of values produced by next()
+   */
+  values(delta = 1 / 60, limit = 100) {
+    const values = [];
+    for (let i = 0; i <= limit; i++) {
+      values.push(this.next(delta));
+      if (this.finished()) break;
+    }
+    return values;
+  }
+}
+
+// Optional: run static initializer
+Animator.initClass();

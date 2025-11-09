@@ -1,87 +1,59 @@
-/*
- * decaffeinate suggestions:
- * DS002: Fix invalid constructor
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {_} = require("./Underscore");
-const Utils = require("./Utils");
-const {Config} = require("./Config");
-const {EventEmitter} = require("./EventEmitter");
-
-// if window.performance
-// 	getTime = -> window.performance.now()
-// else
-// 	getTime = -> Date.now()
+import Utils from "./Utils.js";
+import { EventEmitter } from "./EventEmitter.js";
 
 const getTime = () => Utils.getTime() * 1000;
 
+export class AnimationLoop extends EventEmitter {
+  constructor() {
+    super();
 
-// Make the time ticks a "fixed" 1/60 of a second.
-// Framer.Loop.delta = 1/60
+    this.delta = 1 / 60;
+    this.raf = true;
 
-// Include workaround for a WebKit2 browser bug
-// Framer.Loop.raf = false
+    // Disable RAF for certain WebKit versions in Framer Studio or Desktop
+    const webkitVersion = Utils.webkitVersion();
+    if (webkitVersion > 600 && webkitVersion < 601) {
+      if (Utils.isFramerStudio() || Utils.isDesktop()) {
+        this.raf = false;
+      }
+    }
 
-exports.AnimationLoop = class AnimationLoop extends EventEmitter {
+    // To avoid EventEmitter warning
+    this.maximumListeners = Infinity;
 
-	constructor() {
+    // Bind start method
+    this.start = this.start.bind(this);
+  }
 
-		// For now we set the delta to a fixed time because using performance.now plus
-		// raf seems to cause weird issues.
-		this.start = this.start.bind(this);
-		this.delta = 1/60;
-		this.raf = true;
+  start() {
+    let previousTime = getTime();
 
-		// Workaraound for RAF bug on 10.10
-		// https://bugs.webkit.org/show_bug.cgi?id=137599
+    const update = () => {
+      let deltaTime;
+      if (this.delta) {
+        deltaTime = this.delta;
+      } else {
+        const currentTime = getTime();
+        deltaTime = (currentTime - previousTime) / 1000;
+        previousTime = currentTime;
+      }
 
-		if ((Utils.webkitVersion() > 600) && (Utils.webkitVersion() < 601)) {
-			if (Utils.isFramerStudio() || Utils.isDesktop()) {
-				this.raf = false;
-			}
-		}
+      this.emit("update", deltaTime);
+      this.emit("render", deltaTime);
+    };
 
-		// To avoid event emitter warning
-		this.maximumListeners = Infinity;
-	}
+    const tick = () => {
+      if (this.raf) {
+        window.requestAnimationFrame(tick);
+        update();
+      } else {
+        setTimeout(() => {
+          window.requestAnimationFrame(tick);
+          update();
+        }, 0);
+      }
+    };
 
-	start() {
-
-		const animationLoop = this;
-		let _timestamp = getTime();
-
-		const update = function() {
-
-			let delta;
-			if (animationLoop.delta) {
-				({
-                    delta
-                } = animationLoop);
-			} else {
-				const timestamp = getTime();
-				delta = (timestamp - _timestamp) / 1000;
-				_timestamp = timestamp;
-			}
-
-			animationLoop.emit("update", delta);
-			return animationLoop.emit("render", delta);
-		};
-
-		var tick = function(timestamp) {
-
-			if (animationLoop.raf) {
-				window.requestAnimationFrame(tick);
-				return update();
-			} else {
-				return window.setTimeout(function() {
-					window.requestAnimationFrame(tick);
-					return update();
-				}
-				, 0);
-			}
-		};
-
-		return tick();
-	}
-};
+    tick();
+  }
+}

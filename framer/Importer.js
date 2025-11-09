@@ -1,274 +1,180 @@
-/*
- * decaffeinate suggestions:
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
- * DS205: Consider reworking code to avoid use of IIFEs
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {_} = require("./Underscore");
-const Utils = require("./Utils");
+import _ from "./Underscore.js";
+import Utils from "./Utils.js";
+import { Layer } from "./Layer.js";
 
-const ChromeAlert = `\
-Importing layers is currently only supported on Safari. If you really want it to work with Chrome quit it, open a terminal and run:
-open -a Google\ Chrome -–allow-file-access-from-files\
-`;
+const ChromeAlert = `Importing layers is currently only supported on Safari. 
+For Chrome, run: open -a "Google Chrome" --allow-file-access-from-files`;
 
-const resizeFrame = function(scale, frame) {
-
-	if (scale === 1) { return frame; }
-
-	const result = {};
-
-	for (var key of ["x", "y", "width", "height"]) {
-		if (frame.hasOwnProperty(key)) {
-			result[key] = frame[key] * scale;
-		}
-	}
-
-	return result;
+const resizeFrame = (scale, frame) => {
+  if (scale === 1 || !frame) return frame;
+  const result = {};
+  ["x", "y", "width", "height"].forEach((key) => {
+    if (frame.hasOwnProperty(key)) result[key] = frame[key] * scale;
+  });
+  return result;
 };
 
-const startsWithNumber = str => (new RegExp("^[0-9]")).test(str);
+const startsWithNumber = (str) => /^[0-9]/.test(str);
 
-const sanitizeLayerName = function(name) {
-	for (var suffix of ["*", "-", ".png", ".jpg", ".pdf"]) {
-		if (_.endsWith(name.toLowerCase(), suffix)) {
-			name = name.slice(0, +(name.length-suffix.length-1) + 1 || undefined);
-		}
-	}
-	return name;
+const sanitizeLayerName = (name) => {
+  for (const suffix of ["*", "-", ".png", ".jpg", ".pdf"]) {
+    if (name.toLowerCase().endsWith(suffix)) {
+      name = name.slice(0, -suffix.length);
+    }
+  }
+  return name;
 };
 
-exports.Importer = class Importer {
+export class Importer {
+  constructor(path, options = {}, extraLayerProperties = {}) {
+    this.path = path;
+    this.options = options;
+    this.extraLayerProperties = extraLayerProperties;
+    this.scale = options.scale ?? 1;
+    this.paths = {
+      layerInfo: Utils.pathJoin(this.path, "layers.json"),
+      images: Utils.pathJoin(this.path, "images"),
+      documentName: decodeURIComponent(this.path.split("/").pop()),
+    };
+    this._createdLayers = [];
+    this._createdLayersByName = {};
+  }
 
-	constructor(path, options, extraLayerProperties) {
+  async load() {
+    const layerInfo = await this._loadLayerInfo();
+    if (!layerInfo || layerInfo.length === 0) {
+      throw new Error("Importer: no layers. Ensure at least one layer exists.");
+    }
 
-		this.path = path;
-		if (options == null) { options = {}; }
-		this.options = options;
-		if (extraLayerProperties == null) { extraLayerProperties = {}; }
-		this.extraLayerProperties = extraLayerProperties;
-		this.paths = {
-			layerInfo: Utils.pathJoin(this.path, "layers.json"),
-			images: Utils.pathJoin(this.path, "images"),
-			documentName: decodeURIComponent(this.path.split("/").pop())
-		};
+    // Pass 1: create all layers recursively
+    layerInfo.forEach((info) => this._createLayer(info));
 
-		this._createdLayers = [];
-		this._createdLayersByName = {};
+    // Pass 2: correct hierarchy and positions
+    this._createdLayers.forEach((layer) => this._correctLayer(layer));
+    this._correctArtboards(this._createdLayers);
 
-		this.scale = this.options.scale != null ? this.options.scale : 1;
-	}
+    // Pass 3: ensure all layers are inserted
+    this._createdLayers.forEach((layer) => {
+      if (!layer.parent) layer.parent = null;
+    });
 
-	load() {
+    return this._createdLayersByName;
+  }
 
-		let layer;
-		const layersByName = {};
-		const layerInfo = this._loadlayerInfo();
+  async _loadLayerInfo() {
+    try {
+      // Check preloaded global variable
+      const importedKey = `${this.paths.documentName}/layers.json.js`;
+      if (window.__imported__?.[importedKey]) {
+        return _.cloneDeep(window.__imported__[importedKey]);
+      }
 
-		if (layerInfo.length === 0) {
-			throw new Error("Importer: no layers. Do you have at least one layer group?");
-		}
+      // Load JSON asynchronously
+      const response = await fetch(this.paths.layerInfo);
+      if (!response.ok)
+        throw new Error(`Failed to load layers: ${response.statusText}`);
+      return await response.json();
+    } catch (err) {
+      console.warn(ChromeAlert);
+      throw err;
+    }
+  }
 
-		// Pass one. Create all layers build the hierarchy
-		layerInfo.map(layerItemInfo => {
-			return this._createLayer(layerItemInfo);
-		});
+  _createLayer(info, parent) {
+    // Scale frames
+    if (info.layerFrame)
+      info.layerFrame = resizeFrame(this.scale, info.layerFrame);
+    if (info.maskFrame)
+      info.maskFrame = resizeFrame(this.scale, info.maskFrame);
+    if (info.image?.frame)
+      info.image.frame = resizeFrame(this.scale, info.image.frame);
 
-		// Pass three, correct artboard positions, and reset top left
-		// to the minimum x, y of all artboards
-		// @_correctArtboards(@_createdLayers)
+    if (!info.children) info.children = [];
 
-		// Pass two. Adjust position on screen for all layers
-		// based on the hierarchy.
-		for (layer of Array.from(this._createdLayers)) {
-			this._correctLayer(layer);
-		}
+    const LayerClass = Layer;
+    const layerInfo = {
+      shadow: true,
+      name: sanitizeLayerName(info.name),
+      frame: info.layerFrame,
+      clip: false,
+      backgroundColor: null,
+      visible: info.visible ?? true,
+      ...this.extraLayerProperties,
+    };
 
-		this._correctArtboards(this._createdLayers);
+    if (info.image) {
+      layerInfo.frame = info.image.frame;
+      layerInfo.image = Utils.pathJoin(this.path, info.image.path);
+    }
 
+    if (info.maskFrame) layerInfo.clip = true;
+    if (info.kind === "artboard")
+      layerInfo.backgroundColor = info.backgroundColor;
 
-		// Pass three, insert the layers into the dom
-		// (they were not inserted yet because of the shadow keyword)
-		for (layer of Array.from(this._createdLayers)) {
-			if (!layer.parent) {
-				layer.parent = null;
-			}
-		}
+    if (parent?.contentLayer) layerInfo.parent = parent.contentLayer;
+    else if (parent) layerInfo.parent = parent;
 
-		return this._createdLayersByName;
-	}
+    if (startsWithNumber(layerInfo.name)) {
+      throw new Error(
+        `Layer/Artboard names cannot start with a number: '${layerInfo.name}'`
+      );
+    }
 
-	_loadlayerInfo() {
+    const layer = new LayerClass(layerInfo);
+    layer.name = layerInfo.name;
+    layer.__framerImportedFromPath = this.path;
 
-		// Chrome is a pain in the ass and won't allow local file access
-		// therefore I add a .js file which adds the data to
-		// window.__imported__["<path>"]
+    if (layerInfo.name.toLowerCase().includes("scroll")) layer.scroll = true;
+    if (layerInfo.name.toLowerCase().includes("draggable"))
+      layer.draggable.enabled = true;
 
-		const importedKey = `${this.paths.documentName}/layers.json.js`;
+    if (!layer.image && !info.children.length && !info.maskFrame) {
+      layer.frame = Utils.frameZero();
+    }
 
-		if (window.__imported__ != null ? window.__imported__.hasOwnProperty(importedKey) : undefined) {
-			return _.cloneDeep(window.__imported__[importedKey]);
-		}
+    [...info.children]
+      .reverse()
+      .forEach((childInfo) => this._createLayer(childInfo, layer));
 
-		return Framer.Utils.domLoadJSONSync(this.paths.layerInfo);
-	}
+    if (info.kind === "artboard") layer.point = { x: 0, y: 0 };
+    else if (!layer.image && !info.maskFrame)
+      layer.frame = layer.contentFrame();
 
-	_createLayer(info, parent) {
+    layer._info = info;
+    this._createdLayers.push(layer);
+    this._createdLayersByName[layer.name] = layer;
 
-		// Resize the layer frames
-		if (info.layerFrame) { info.layerFrame = resizeFrame(this.scale, info.layerFrame); }
-		if (info.maskFrame) { info.maskFrame = resizeFrame(this.scale, info.maskFrame); }
-		if ((info.image != null ? info.image.frame : undefined) != null) { info.image.frame = resizeFrame(this.scale, info.image.frame); }
+    return layer;
+  }
 
-		// Flattened layers don't get children
-		if (!info.children) {
-			info.children = [];
-		}
+  _correctArtboards(layers) {
+    const artboards = layers.filter((l) => l._info.kind === "artboard");
+    if (!artboards.length) return;
 
-		const LayerClass = Layer;
+    const leftMostLayer = artboards.reduce(
+      (left, layer) => (!left || layer.x < left.x ? layer : left),
+      null
+    );
+    const offset = leftMostLayer.point;
 
-		const layerInfo = {
-			shadow: true,
-			name: sanitizeLayerName(info.name),
-			frame: info.layerFrame,
-			clip: false,
-			backgroundColor: null,
-			visible: info.visible != null ? info.visible : true
-		};
+    artboards.forEach((layer) => {
+      layer.x -= offset.x;
+      layer.y -= offset.y;
+      layer.visible = true;
+    });
+  }
 
-		_.extend(layerInfo, this.extraLayerProperties);
+  _correctLayer(layer) {
+    const traverse = (l) => {
+      if (l.parent) l.frame = Utils.convertPoint(l.frame, null, l.parent);
+      l.children.forEach(traverse);
+    };
+    if (!layer.parent) traverse(layer);
+  }
+}
 
-		// Most layers will have an image, add that here
-		if (info.image) {
-			layerInfo.frame = info.image.frame;
-			layerInfo.image = Utils.pathJoin(this.path, info.image.path);
-		}
-
-		// If there is a mask on this layer we clip the layer
-		if (info.maskFrame) {
-			layerInfo.clip = true;
-		}
-
-		if (info.kind === "artboard") {
-			layerInfo.backgroundColor = info.backgroundColor;
-		}
-
-		// Figure out what the super layer should be. If this layer has a contentLayer
-		// (like a scroll view) we attach it to that instead.
-		if (parent != null ? parent.contentLayer : undefined) {
-			layerInfo.parent = parent.contentLayer;
-		} else if (parent) {
-			layerInfo.parent = parent;
-		}
-
-		// Layer names cannot start with a number
-		if (startsWithNumber(layerInfo.name)) {
-			throw new Error(`Layer or Artboard names can not start with a number: '${layerInfo.name}'`);
-		}
-
-		// We can create the layer here
-		const layer = new LayerClass(layerInfo);
-		layer.name = layerInfo.name;
-
-		// Record the imported path for layers (for the inferencer)
-		layer.__framerImportedFromPath = this.path;
-
-		// Set scroll to true if scroll is in the layer name
-		if (layerInfo.name.toLowerCase().indexOf("scroll") !== -1) {
-			layer.scroll = true;
-		}
-
-		// Set draggable enabled if draggable is in the name
-		if (layerInfo.name.toLowerCase().indexOf("draggable") !== -1) {
-			layer.draggable.enabled = true;
-		}
-
-		// A layer without an image, mask or children should be zero
-		if (!layer.image && !info.children.length && !info.maskFrame) {
-			layer.frame = Utils.frameZero();
-		}
-
-		_.clone(info.children).reverse().map(info => {
-			return this._createLayer(info, layer);
-		});
-
-		// If this is an artboard we retain the size, but set the coordinates to zero
-		// because all coordinates within artboards are 0, 0 based.
-		if (info.kind === "artboard") {
-			layer.point = {x: 0, y: 0};
-
-		// If this is not an artboard, and does not have an image or mask, we clip the
-		// layer to its content size.
-		} else if (!layer.image && !info.maskFrame) {
-			layer.frame = layer.contentFrame();
-		}
-
-		layer._info = info;
-
-		this._createdLayers.push(layer);
-		return this._createdLayersByName[layer.name] = layer;
-	}
-
-	_correctArtboards(layers) {
-
-		let layer;
-		let leftMostLayer = null;
-
-		for (layer of Array.from(layers)) {
-			if (layer._info.kind === "artboard") {
-				layer.point = layer._info.layerFrame;
-				layer.visible = true;
-
-				if ((leftMostLayer === null) || (layer.x < leftMostLayer.x)) {
-					leftMostLayer = layer;
-				}
-			}
-		}
-
-		if (!leftMostLayer) { return; }
-
-		// Calculate the artboard positions to always be 0, 0.
-		const pointOffset = leftMostLayer.point;
-
-		// Correct the artboard positions to 0, 0.
-		return (() => {
-			const result = [];
-			for (layer of Array.from(layers)) {
-				if (layer._info.kind === "artboard") {
-					layer.x -= pointOffset.x;
-					result.push(layer.y -= pointOffset.y);
-				} else {
-					result.push(undefined);
-				}
-			}
-			return result;
-		})();
-	}
-
-	_correctLayer(layer) {
-
-		var traverse = function(layer) {
-
-			if (layer.parent) {
-				layer.frame = Utils.convertPoint(layer.frame, null, layer.parent);
-			}
-
-			return Array.from(layer.children).map((child) =>
-				traverse(child));
-		};
-
-		if (!layer.parent) {
-			return traverse(layer);
-		}
-	}
-};
-
-exports.Importer.load = function(path, scale) {
-
-	if (scale == null) { scale = 1; }
-
-	const importer = new exports.Importer(path, scale);
-	return importer.load();
+// Static helper
+Importer.load = async function (path, scale = 1) {
+  const importer = new Importer(path, { scale });
+  return await importer.load();
 };

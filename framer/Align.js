@@ -1,94 +1,62 @@
-/*
- * decaffeinate suggestions:
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 const pixelRound = parseInt;
 
-const center = function(layer, property, offset) {
+const center = (layer, property, offset = 0) => {
+  let parent = layer.parent ?? Screen;
+  const borderWidth = parent.borderWidth ?? 0;
 
-	if (offset == null) { offset = 0; }
-	let parent = Screen;
-	if (layer.parent) { ({
-        parent
-    } = layer); }
+  const x = pixelRound(
+    parent.width / 2 - layer.width / 2 - borderWidth + offset
+  );
+  const y = pixelRound(
+    parent.height / 2 - layer.height / 2 - borderWidth + offset
+  );
 
-	let {
-        borderWidth
-    } = parent;
-	if (borderWidth == null) { borderWidth = 0; }
-
-	const x = pixelRound(((parent.width / 2) - (layer.width / 2) - borderWidth) + offset);
-	const y = pixelRound(((parent.height / 2) - (layer.height / 2) - borderWidth) + offset);
-
-	if (property === "x") { return x; }
-	if (property === "y") { return y; }
-	if (property === "point") { return {x, y}; }
-	return 0;
+  if (property === "x") return x;
+  if (property === "y") return y;
+  if (property === "point") return { x, y };
+  return 0;
 };
 
-const left = function(layer, property, offset) {
-	if (offset == null) { offset = 0; }
-	if (property !== "x") { throw Error("Align.left only works for x"); }
-	let parent = Screen;
-	if (layer.parent) { ({
-        parent
-    } = layer); }
-	return pixelRound(0 + offset);
+const left = (layer, property, offset = 0) => {
+  if (property !== "x") throw new Error("Align.left only works for x");
+  return pixelRound(offset);
 };
 
-const right = function(layer, property, offset) {
-	if (offset == null) { offset = 0; }
-	if (property !== "x") { throw Error("Align.right only works for x"); }
-	let parent = Screen;
-	if (layer.parent) { ({
-        parent
-    } = layer); }
-	let {
-        borderWidth
-    } = parent;
-	if (borderWidth == null) { borderWidth = 0; }
-	return pixelRound((parent.width - (2 * borderWidth) - layer.width) + offset);
+const right = (layer, property, offset = 0) => {
+  if (property !== "x") throw new Error("Align.right only works for x");
+  const parent = layer.parent ?? Screen;
+  const borderWidth = parent.borderWidth ?? 0;
+  return pixelRound(parent.width - 2 * borderWidth - layer.width + offset);
 };
 
-const top = function(layer, property, offset) {
-	if (offset == null) { offset = 0; }
-	if (property !== "y") { throw Error("Align.top only works for y"); }
-	let parent = Screen;
-	if (layer.parent) { ({
-        parent
-    } = layer); }
-	return pixelRound(0 + offset);
+const top = (layer, property, offset = 0) => {
+  if (property !== "y") throw new Error("Align.top only works for y");
+  return pixelRound(offset);
 };
 
-const bottom = function(layer, property, offset) {
-	if (offset == null) { offset = 0; }
-	if (property !== "y") { throw Error("Align.bottom only works for y"); }
-	let parent = Screen;
-	if (layer.parent) { ({
-        parent
-    } = layer); }
-	let {
-        borderWidth
-    } = parent;
-	if (borderWidth == null) { borderWidth = 0; }
-	return pixelRound((parent.height - (2 * borderWidth) - layer.height) + offset);
+const bottom = (layer, property, offset = 0) => {
+  if (property !== "y") throw new Error("Align.bottom only works for y");
+  const parent = layer.parent ?? Screen;
+  const borderWidth = parent.borderWidth ?? 0;
+  return pixelRound(parent.height - 2 * borderWidth - layer.height + offset);
 };
 
-// Helper to see if we are dealing with a function or result of a function
-const wrapper = function(f, name) {
-	const align = function(a, b) {
-		if ((a == null) || _.isNumber(a)) { return (l, p) => f(l, p, a); }
-		return f(a, b, 0);
-	};
-	align.toInspect = () => `Align.${name}`;
-	return align;
+// Helper to wrap function or value for flexible usage
+const wrapper = (f, name) => {
+  const align = (a, b) => {
+    if (a == null || typeof a === "number") {
+      return (layer, property) => f(layer, property, a ?? 0);
+    }
+    return f(a, b, 0);
+  };
+  align.toInspect = () => `Align.${name}`;
+  return align;
 };
 
-exports.Align = {
-	center: wrapper(center, "center"),
-	left: wrapper(left, "left"),
-	right: wrapper(right, "right"),
-	top: wrapper(top, "top"),
-	bottom: wrapper(bottom, "bottom")
+export const Align = {
+  center: wrapper(center, "center"),
+  left: wrapper(left, "left"),
+  right: wrapper(right, "right"),
+  top: wrapper(top, "top"),
+  bottom: wrapper(bottom, "bottom"),
 };

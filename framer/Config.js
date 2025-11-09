@@ -1,11 +1,6 @@
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const Utils = require("./Utils");
+import Utils from "./Utils.js";
 
-const FramerCSS = `\
+const FramerCSS = `
 body {
 	margin: 0;
 }
@@ -28,18 +23,17 @@ body {
 	background-position: center;
 	background-size: cover;
 	-webkit-overflow-scrolling: touch;
-	-webkit-box-sizing: border-box;
-	-webkit-user-select: none;
+	box-sizing: border-box;
+	user-select: none;
 }
 
 .framerLayer input,
 .framerLayer textarea,
 .framerLayer select,
 .framerLayer option,
-.framerLayer div[contenteditable=true]
-{
+.framerLayer div[contenteditable="true"] {
 	pointer-events: auto;
-	-webkit-user-select: auto;
+	user-select: auto;
 }
 
 .framerLayer svg {
@@ -51,24 +45,14 @@ body {
 .framerDebug {
 	padding: 6px;
 	color: #fff;
-	font: 10px/1em Monaco;
+	font: 10px/1em Monaco, monospace;
 }
-\
 `;
 
-// We only apply this to Safari as Chrome actually pixelates this at 1x,
-// meaning that all images get really ugly on 2x screens. But for now
-// this doesn't work on Safari, only tech preview.
+Utils.domComplete(() => {
+  Utils.insertCSS(FramerCSS);
+});
 
-// https://github.com/motif/company/issues/1642
-
-// FramerCSSSafari = """
-// @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-// 	.framerLayer {
-// 		image-rendering: pixelated;
-// 	}
-// }
-// """
-
-Utils.domComplete(() => Utils.insertCSS(FramerCSS));
-	// Utils.insertCSS(FramerCSSSafari) if Utils.isSafari()
+export const Config = {
+  FramerCSS,
+};

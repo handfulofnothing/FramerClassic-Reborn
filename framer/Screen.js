@@ -1,84 +1,150 @@
-/*
- * decaffeinate suggestions:
- * DS206: Consider reworking classes to avoid initClass
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {BaseClass} = require("./BaseClass");
+import { BaseClass } from "./BaseClass";
 
-class ScreenClass extends BaseClass {
-	static initClass() {
-	
-		this.define("width", {  get() {
-			if (this.device) { return this.device.screenSize.width; }
-			return Canvas.width;
-		}
-	}
-		);
-		this.define("height", { get() {
-			if (this.device) { return this.device.screenSize.height; }
-			return Canvas.height;
-		}
-	}
-		);
-		this.define("canvasFrame", { get() {
-			if (this.device) { return this.device.context.canvasFrame; }
-			return this.frame;
-		}
-	}
-		);
-		this.define("midX", {get() { return Utils.frameGetMidX(this.frame); }});
-		this.define("midY", {get() { return Utils.frameGetMidY(this.frame); }});
-		this.define("size", {get() { return Utils.size(this); }});
-		this.define("frame", {get() { return Utils.frame(this); }});
-		this.define("device", {get() { return Framer.CurrentContext.device; }});
-	
-		this.define("backgroundColor", this.proxyProperty("device.screen.backgroundColor"));
-		this.define("perspective", this.proxyProperty("device.context.perspective"));
-		this.define("perspectiveOriginX", this.proxyProperty("device.context.perspectiveOriginX"));
-		this.define("perspectiveOriginY", this.proxyProperty("device.context.perspectiveOriginY"));
-	}
+export class ScreenClass extends BaseClass {
+  static initClass() {
+    this.define("width", {
+      get() {
+        if (this.device) {
+          return this.device.screenSize.width;
+        }
+        return Canvas.width;
+      },
+    });
+    this.define("height", {
+      get() {
+        if (this.device) {
+          return this.device.screenSize.height;
+        }
+        return Canvas.height;
+      },
+    });
+    this.define("canvasFrame", {
+      get() {
+        if (this.device) {
+          return this.device.context.canvasFrame;
+        }
+        return this.frame;
+      },
+    });
+    this.define("midX", {
+      get() {
+        return Utils.frameGetMidX(this.frame);
+      },
+    });
+    this.define("midY", {
+      get() {
+        return Utils.frameGetMidY(this.frame);
+      },
+    });
+    this.define("size", {
+      get() {
+        return Utils.size(this);
+      },
+    });
+    this.define("frame", {
+      get() {
+        return Utils.frame(this);
+      },
+    });
+    this.define("device", {
+      get() {
+        return Framer.CurrentContext.device;
+      },
+    });
 
-	toInspect() {
-		return `<Screen ${Utils.roundWhole(this.width)}x${Utils.roundWhole(this.height)}>`;
-	}
+    this.define(
+      "backgroundColor",
+      this.proxyProperty("device.screen.backgroundColor")
+    );
+    this.define(
+      "perspective",
+      this.proxyProperty("device.context.perspective")
+    );
+    this.define(
+      "perspectiveOriginX",
+      this.proxyProperty("device.context.perspectiveOriginX")
+    );
+    this.define(
+      "perspectiveOriginY",
+      this.proxyProperty("device.context.perspectiveOriginY")
+    );
+  }
 
-	// Triggered from outside by Canvas and DeviceComponent
-	onResize(cb) { return this.on("resize", cb); }
+  toInspect() {
+    return `<Screen ${Utils.roundWhole(this.width)}x${Utils.roundWhole(
+      this.height
+    )}>`;
+  }
 
-	// Point Conversion
+  // Triggered from outside by Canvas and DeviceComponent
+  onResize(cb) {
+    return this.on("resize", cb);
+  }
 
-	convertPointToLayer(point, layer) {
-		return Utils.convertPointFromContext(point, layer, false, true);
-	}
+  // Point Conversion
 
-	convertPointToCanvas(point) {
-		const ctx = Framer.Device.context;
-		return Utils.convertPointToContext(point, ctx, true, false);
-	}
+  convertPointToLayer(point, layer) {
+    return Utils.convertPointFromContext(point, layer, false, true);
+  }
 
-	// Edge Swipe
+  convertPointToCanvas(point) {
+    const ctx = Framer.Device.context;
+    return Utils.convertPointToContext(point, ctx, true, false);
+  }
 
-	onEdgeSwipe(cb) { return this.on(Events.EdgeSwipe, cb); }
-	onEdgeSwipeStart(cb) { return this.on(Events.EdgeSwipeStart, cb); }
-	onEdgeSwipeEnd(cb) { return this.on(Events.EdgeSwipeEnd, cb); }
+  // Edge Swipe
 
-	onEdgeSwipeTop(cb) { return this.on(Events.EdgeSwipeTop, cb); }
-	onEdgeSwipeTopStart(cb) { return this.on(Events.EdgeSwipeTopStart, cb); }
-	onEdgeSwipeTopEnd(cb) { return this.on(Events.EdgeSwipeTopEnd, cb); }
+  onEdgeSwipe(cb) {
+    return this.on(Events.EdgeSwipe, cb);
+  }
+  onEdgeSwipeStart(cb) {
+    return this.on(Events.EdgeSwipeStart, cb);
+  }
+  onEdgeSwipeEnd(cb) {
+    return this.on(Events.EdgeSwipeEnd, cb);
+  }
 
-	onEdgeSwipeRight(cb) { return this.on(Events.EdgeSwipeRight, cb); }
-	onEdgeSwipeRightStart(cb) { return this.on(Events.EdgeSwipeRightStart, cb); }
-	onEdgeSwipeRightEnd(cb) { return this.on(Events.EdgeSwipeRightEnd, cb); }
+  onEdgeSwipeTop(cb) {
+    return this.on(Events.EdgeSwipeTop, cb);
+  }
+  onEdgeSwipeTopStart(cb) {
+    return this.on(Events.EdgeSwipeTopStart, cb);
+  }
+  onEdgeSwipeTopEnd(cb) {
+    return this.on(Events.EdgeSwipeTopEnd, cb);
+  }
 
-	onEdgeSwipeBottom(cb) { return this.on(Events.EdgeSwipeBottom, cb); }
-	onEdgeSwipeBottomStart(cb) { return this.on(Events.EdgeSwipeBottomStart, cb); }
-	onEdgeSwipeBottomEnd(cb) { return this.on(Events.EdgeSwipeBottomEnd, cb); }
+  onEdgeSwipeRight(cb) {
+    return this.on(Events.EdgeSwipeRight, cb);
+  }
+  onEdgeSwipeRightStart(cb) {
+    return this.on(Events.EdgeSwipeRightStart, cb);
+  }
+  onEdgeSwipeRightEnd(cb) {
+    return this.on(Events.EdgeSwipeRightEnd, cb);
+  }
 
-	onEdgeSwipeLeft(cb) { return this.on(Events.EdgeSwipeLeft, cb); }
-	onEdgeSwipeLeftStart(cb) { return this.on(Events.EdgeSwipeLeftStart, cb); }
-	onEdgeSwipeLeftEnd(cb) { return this.on(Events.EdgeSwipeLeftEnd, cb); }
+  onEdgeSwipeBottom(cb) {
+    return this.on(Events.EdgeSwipeBottom, cb);
+  }
+  onEdgeSwipeBottomStart(cb) {
+    return this.on(Events.EdgeSwipeBottomStart, cb);
+  }
+  onEdgeSwipeBottomEnd(cb) {
+    return this.on(Events.EdgeSwipeBottomEnd, cb);
+  }
+
+  onEdgeSwipeLeft(cb) {
+    return this.on(Events.EdgeSwipeLeft, cb);
+  }
+  onEdgeSwipeLeftStart(cb) {
+    return this.on(Events.EdgeSwipeLeftStart, cb);
+  }
+  onEdgeSwipeLeftEnd(cb) {
+    return this.on(Events.EdgeSwipeLeftEnd, cb);
+  }
 }
 ScreenClass.initClass();
 
 // We use this as a singleton
-exports.Screen = new ScreenClass;
+export const Screen = new ScreenClass();

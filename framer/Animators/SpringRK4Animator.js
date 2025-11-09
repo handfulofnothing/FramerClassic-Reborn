@@ -1,72 +1,63 @@
-/*
- * decaffeinate suggestions:
- * DS002: Fix invalid constructor
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const {Animator} = require("./Animator");
-const {Integrator} = require("../Integrator");
+import { Animator } from "./Animator.js";
+import { Integrator } from "../Integrator.js";
+import _ from "lodash"; // assuming lodash is available
 
-exports.SpringRK4Animator = class SpringRK4Animator extends Animator {
+export class SpringRK4Animator extends Animator {
+  _time = 0;
+  _value = 0;
+  _velocity = 0;
+  _stopSpring = false;
+  _integrator = null;
+  options = {};
 
-	constructor(...args) {
-		this.finished = this.finished.bind(this);
-		super(...args);
-	}
+  constructor(...args) {
+    super(...args);
+    // bind finished if used as a callback
+    this.finished = this.finished.bind(this);
+  }
 
-	setup(options) {
+  setup(options = {}) {
+    this.options = _.defaults(options, {
+      tension: 250,
+      friction: 25,
+      velocity: 0,
+      tolerance: 1 / 1000,
+    });
 
-		this.options = _.defaults(options, {
-			tension: 250,
-			friction: 25,
-			velocity: 0,
-			tolerance: 1 / 1000
-		}
-		);
+    this._time = 0;
+    this._value = 0;
+    this._velocity = this.options.velocity;
+    this._stopSpring = false;
 
-		this._time = 0;
-		this._value = 0;
-		this._velocity = this.options.velocity;
-		this._stopSpring = false;
+    this._integrator = new Integrator((state) => {
+      return -this.options.tension * state.x - this.options.friction * state.v;
+    });
+  }
 
-		return this._integrator = new Integrator(state => {
-			return (- this.options.tension * state.x) - (this.options.friction * state.v);
-		});
-	}
+  next(delta) {
+    if (this.finished()) return 1;
 
-	next(delta) {
+    this._time += delta;
 
-		if (this.finished()) {
-			return 1;
-		}
+    const stateBefore = {
+      x: this._value - 1,
+      v: this._velocity,
+    };
 
-		this._time += delta;
+    const stateAfter = this._integrator.integrateState(stateBefore, delta);
 
-		const stateBefore = {};
-		let stateAfter = {};
+    this._value = 1 + stateAfter.x;
+    this._velocity = stateAfter.v;
 
-		// Calculate previous state
-		stateBefore.x = this._value - 1;
-		stateBefore.v = this._velocity;
+    const netValueIsLow = Math.abs(stateAfter.x) < this.options.tolerance;
+    const netVelocityIsLow = Math.abs(stateAfter.v) < this.options.tolerance;
 
-		// Calculate new state
-		stateAfter = this._integrator.integrateState(stateBefore, delta);
-		this._value = 1 + stateAfter.x;
-		const finalVelocity = stateAfter.v;
-		const netFloat = stateAfter.x;
-		const net1DVelocity = stateAfter.v;
+    this._stopSpring = netValueIsLow && netVelocityIsLow;
 
-		// See if we reached the end state
-		const netValueIsLow = Math.abs(netFloat) < this.options.tolerance;
-		const netVelocityIsLow = Math.abs(net1DVelocity) < this.options.tolerance;
+    return this._value;
+  }
 
-		this._stopSpring = netValueIsLow && netVelocityIsLow;
-		this._velocity = finalVelocity;
-
-		return this._value;
-	}
-
-	finished() {
-		return this._stopSpring;
-	}
-};
+  finished() {
+    return this._stopSpring;
+  }
+}

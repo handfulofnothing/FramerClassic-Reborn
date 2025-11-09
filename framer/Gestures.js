@@ -1,88 +1,84 @@
-// Gesture events
-const Gestures = {};
+export const Gestures = Object.freeze({
+  // Tap
+  Tap: "tap",
+  TapStart: "tapstart",
+  TapEnd: "tapend",
+  DoubleTap: "doubletap",
 
-// Tap
-Gestures.Tap = "tap";
-Gestures.TapStart = "tapstart";
-Gestures.TapEnd = "tapend";
-Gestures.DoubleTap = "doubletap";
+  // Force Tap
+  ForceTap: "forcetap",
+  ForceTapChange: "forcetapchange",
+  ForceTapStart: "forcetapstart",
+  ForceTapEnd: "forcetapend",
 
-// Force Tap
-Gestures.ForceTap = "forcetap";
-Gestures.ForceTapChange = "forcetapchange";
-Gestures.ForceTapStart = "forcetapstart";
-Gestures.ForceTapEnd = "forcetapend";
+  // Long Press
+  LongPress: "longpress",
+  LongPressStart: "longpressstart",
+  LongPressEnd: "longpressend",
 
-// Press
-Gestures.LongPress = "longpress";
-Gestures.LongPressStart = "longpressstart";
-Gestures.LongPressEnd = "longpressend";
+  // Swipe
+  Swipe: "swipe",
+  SwipeStart: "swipestart",
+  SwipeEnd: "swipeend",
 
-// Swipe
-Gestures.Swipe = "swipe";
-Gestures.SwipeStart = "swipestart";
-Gestures.SwipeEnd = "swipeend";
+  SwipeUp: "swipeup",
+  SwipeUpStart: "swipeupstart",
+  SwipeUpEnd: "swipeupend",
 
-Gestures.SwipeUp = "swipeup";
-Gestures.SwipeUpStart = "swipeupstart";
-Gestures.SwipeUpEnd = "swipeupend";
+  SwipeDown: "swipedown",
+  SwipeDownStart: "swipedownstart",
+  SwipeDownEnd: "swipedownend",
 
-Gestures.SwipeDown = "swipedown";
-Gestures.SwipeDownStart = "swipedownstart";
-Gestures.SwipeDownEnd = "swipedownend";
+  SwipeLeft: "swipeleft",
+  SwipeLeftStart: "swipeleftstart",
+  SwipeLeftEnd: "swipeleftend",
 
-Gestures.SwipeLeft = "swipeleft";
-Gestures.SwipeLeftStart = "swipeleftstart";
-Gestures.SwipeLeftEnd = "swipeleftend";
+  SwipeRight: "swiperight",
+  SwipeRightStart: "swiperightstart",
+  SwipeRightEnd: "swiperightend",
 
-Gestures.SwipeRight = "swiperight";
-Gestures.SwipeRightStart = "swiperightstart";
-Gestures.SwipeRightEnd = "swiperightend";
+  // Edge Swipe
+  EdgeSwipe: "edgeswipe",
+  EdgeSwipeStart: "edgeswipestart",
+  EdgeSwipeEnd: "edgeswipeend",
 
-// Edge Swipe
+  EdgeSwipeTop: "edgeswipetop",
+  EdgeSwipeTopStart: "edgeswipetopstart",
+  EdgeSwipeTopEnd: "edgeswipetopend",
 
-Gestures.EdgeSwipe = "edgeswipe";
-Gestures.EdgeSwipeStart = "edgeswipestart";
-Gestures.EdgeSwipeEnd = "edgeswipeend";
+  EdgeSwipeRight: "edgeswiperight",
+  EdgeSwipeRightStart: "edgeswiperightstart",
+  EdgeSwipeRightEnd: "edgeswiperightend",
 
-Gestures.EdgeSwipeTop = "edgeswipetop";
-Gestures.EdgeSwipeTopStart = "edgeswipetopstart";
-Gestures.EdgeSwipeTopEnd = "edgeswipetopend";
+  EdgeSwipeBottom: "edgeswipebottom",
+  EdgeSwipeBottomStart: "edgeswipebottomstart",
+  EdgeSwipeBottomEnd: "edgeswipebottomend",
 
-Gestures.EdgeSwipeRight = "edgeswiperight";
-Gestures.EdgeSwipeRightStart = "edgeswiperightstart";
-Gestures.EdgeSwipeRightEnd = "edgeswiperightend";
+  EdgeSwipeLeft: "edgeswipeleft",
+  EdgeSwipeLeftStart: "edgeswipeleftstart",
+  EdgeSwipeLeftEnd: "edgeswipeleftend",
 
-Gestures.EdgeSwipeBottom = "edgeswipebottom";
-Gestures.EdgeSwipeBottomStart = "edgeswipebottomstart";
-Gestures.EdgeSwipeBottomEnd = "edgeswipebottomend";
+  // Pan
+  Pan: "pan",
+  PanStart: "panstart",
+  PanEnd: "panend",
+  PanLeft: "panleft",
+  PanRight: "panright",
+  PanUp: "panup",
+  PanDown: "pandown",
 
-Gestures.EdgeSwipeLeft = "edgeswipeleft";
-Gestures.EdgeSwipeLeftStart = "edgeswipeleftstart";
-Gestures.EdgeSwipeLeftEnd = "edgeswipeleftend";
+  // Pinch
+  Pinch: "pinch",
+  PinchStart: "pinchstart",
+  PinchEnd: "pinchend",
 
-// Pan
-Gestures.Pan = "pan";
-Gestures.PanStart = "panstart";
-Gestures.PanEnd = "panend";
-Gestures.PanLeft = "panleft";
-Gestures.PanRight = "panright";
-Gestures.PanUp = "panup";
-Gestures.PanDown = "pandown";
+  // Scale
+  Scale: "scale",
+  ScaleStart: "scalestart",
+  ScaleEnd: "scaleend",
 
-// Pinch
-Gestures.Pinch = "pinch";
-Gestures.PinchStart = "pinchstart";
-Gestures.PinchEnd = "pinchend";
-
-// Scale
-Gestures.Scale = "scale";
-Gestures.ScaleStart = "scalestart";
-Gestures.ScaleEnd = "scaleend";
-
-// Rotate
-Gestures.Rotate = "rotate";
-Gestures.RotateStart = "rotatestart";
-Gestures.RotateEnd = "rotateend";
-
-exports.Gestures = Gestures;
+  // Rotate
+  Rotate: "rotate",
+  RotateStart: "rotatestart",
+  RotateEnd: "rotateend",
+});

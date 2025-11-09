@@ -1,50 +1,37 @@
-/*
- * decaffeinate suggestions:
- * DS002: Fix invalid constructor
- * DS102: Remove unnecessary code created because of implicit returns
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
-const Utils = require("../Utils");
-const {Defaults}   = require("../Defaults");
+import { Defaults } from "../Defaults.js";
+import { Simulator } from "../Simulator.js";
+import { Integrator } from "../Integrator.js";
 
-const {Simulator} = require("../Simulator");
-const {Integrator} = require("../Integrator");
+export class FrictionSimulator extends Simulator {
+  constructor(...args) {
+    this.finished = this.finished.bind(this);
+    super(...args);
+  }
 
-exports.FrictionSimulator = class FrictionSimulator extends Simulator {
+  setup(options) {
+    this.options = Defaults.getDefaults("FrictionSimulator", options);
+    this.options = _.defaults(options, {
+      velocity: 0,
+      position: 0,
+    });
 
-	constructor(...args) {
-		this.finished = this.finished.bind(this);
-		super(...args);
-	}
+    this._state = {
+      x: this.options.position,
+      v: this.options.velocity,
+    };
 
-	setup(options) {
+    return (this._integrator = new Integrator((state) => {
+      return -(this.options.friction * state.v);
+    }));
+  }
 
-		this.options = Defaults.getDefaults("FrictionSimulator", options);
-		this.options = _.defaults(options, {
-			velocity: 0,
-			position: 0
-		}
-		);
+  next(delta) {
+    this._state = this._integrator.integrateState(this._state, delta);
 
-		this._state = {
-			x: this.options.position,
-			v: this.options.velocity
-		};
+    return this._state;
+  }
 
-		return this._integrator = new Integrator(state => {
-			return - (this.options.friction * state.v);
-		});
-	}
-
-	next(delta) {
-
-		this._state = this._integrator.integrateState(this._state, delta);
-
-		return this._state;
-	}
-
-	finished() {
-
-		return Math.abs(this._state.v) < this.options.tolerance;
-	}
-};
+  finished() {
+    return Math.abs(this._state.v) < this.options.tolerance;
+  }
+}
