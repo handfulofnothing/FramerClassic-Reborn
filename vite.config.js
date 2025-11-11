@@ -40,6 +40,7 @@ export const version = \`\${branch}/\${hash}\`;
   fs.writeFileSync(filePath, content);
   console.log(`✅ Wrote version.js to: ${filePath}`);
 }
+writeVersionFile("framer/build");
 
 export default defineConfig({
   build: {
@@ -54,20 +55,22 @@ export default defineConfig({
       plugins: [
         {
           name: "generate-version-file",
-          writeBundle(options) {
-            // Runs after Vite finishes bundling
-            writeVersionFile(options.dir || "dist");
+          buildStart() {
+            console.log("📦 Starting build with version info embedded.");
           },
         },
       ],
     },
   },
   test: {
-    environment: "jsdom",
     globals: true,
+    environment: "jsdom",
+    setupFiles: "test/setup.js", // <-- include your new test bootstrap
+    include: ["test/**/*.test.js"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
+      reportsDirectory: "./coverage",
     },
   },
 });
