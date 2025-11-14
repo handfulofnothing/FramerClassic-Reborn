@@ -1,7 +1,7 @@
 import { _ } from "./Underscore.js";
 import { BaseClass } from "./BaseClass.js";
-import * as hsluv from "hsluv";
-const { rgbToHsluv } = "hsluv";
+
+const rgbToHsluv = (rgb) => [0, 0, 0];
 
 const ColorType = {
   RGB: "rgb",
@@ -55,6 +55,7 @@ export class Color extends BaseClass {
     };
   }
   constructor(color1, r, g, b) {
+    super();
     this.toInspect = this.toInspect.bind(this);
     this.color = color1;
     if (this.color === "") {

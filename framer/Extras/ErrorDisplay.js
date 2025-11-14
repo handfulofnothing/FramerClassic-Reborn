@@ -1,7 +1,10 @@
-import Utils from "../Utils";
-import { BaseClass } from "../BaseClass";
-import { Context } from "../Context";
-import { Layer } from "../Layer";
+import Utils from "../Utils.js";
+import { BaseClass } from "../BaseClass.js";
+import { Context } from "../Context.js";
+import { Layer } from "../Layer.js";
+import { Events } from "../Events.js";
+import { Align } from "../Align.js";
+import { Canvas } from "../Canvas.js";
 
 let errorDisplay = null;
 

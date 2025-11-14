@@ -2,9 +2,9 @@ import { Layer } from "./Layer.js";
 
 export class VideoLayer extends Layer {
   constructor(options = {}) {
-    // Create video element before adding options
     super(options);
-
+    
+    // Create video element after super() call
     this.player = document.createElement("video");
     this.player.setAttribute("webkit-playsinline", "true");
     this.player.setAttribute("playsinline", "");

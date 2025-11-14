@@ -1,4 +1,4 @@
-import { BaseClass } from "./BaseClass";
+import { BaseClass } from "./BaseClass.js";
 
 export class ScreenClass extends BaseClass {
   static initClass() {

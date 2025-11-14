@@ -1,7 +1,7 @@
-import { Layer } from "../Layer";
-import { Color } from "../Color"; // Assuming you have a Color utility
-import { Utils } from "../Utils";
-import _ from "lodash";
+import { Layer } from "../Layer.js";
+import { Color } from "../Color.js"; // Assuming you have a Color utility
+import { Utils } from "../Utils.js";
+import _ from "lodash-es";
 
 export class CircularProgressComponent extends Layer {
   // Class fields with defaults

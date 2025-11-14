@@ -1,6 +1,14 @@
-import { BaseClass } from "../BaseClass";
-import { Context } from "../Context";
-import Utils from "../Utils";
+import { _ } from "../Underscore.js";
+import { BaseClass } from "../BaseClass.js";
+import { Context } from "../Context.js";
+import { Layer } from "../Layer.js";
+import { Gradient } from "../Gradient.js";
+import { Color } from "../Color.js";
+import { Align } from "../Align.js";
+import { Canvas } from "../Canvas.js";
+import { Events } from "../Events.js";
+import { CircularProgressComponent } from "../Components/CircularProgressComponent.js";
+import Utils from "../Utils.js";
 
 class Preloader extends BaseClass {
   static initClass() {
@@ -33,6 +41,7 @@ class Preloader extends BaseClass {
   }
 
   constructor(options) {
+    super();
     this.setLogo = this.setLogo.bind(this);
     this.addImage = this.addImage.bind(this);
     this.addPlayer = this.addPlayer.bind(this);

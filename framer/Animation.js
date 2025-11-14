@@ -67,29 +67,7 @@ export class Animation extends BaseClass {
   }
 
   constructor(...args) {
-    // Old API detection
-
-    // animationA = new Animation
-    // 	layer: layerA
-    // 	properties:
-    // 		x: 100
-
-    this.start = this.start.bind(this);
-    this._instant = this._instant.bind(this);
-    this._noop = this._noop.bind(this);
-    this._start = this._start.bind(this);
-    this.finish = this.finish.bind(this);
-    this._update = this._update.bind(this);
-    this._prepareUpdateValues = this._prepareUpdateValues.bind(this);
-    this._updateValues = this._updateValues.bind(this);
-    this._updateNumberValue = this._updateNumberValue.bind(this);
-    this._calculateNumericObjectValue =
-      this._calculateNumericObjectValue.bind(this);
-    this._updateNumericObjectValue = this._updateNumericObjectValue.bind(this);
-    this._updateColorValue = this._updateColorValue.bind(this);
-    this._updateGradientValue = this._updateGradientValue.bind(this);
-    this._updateShadows = this._updateShadows.bind(this);
-    this._updateTemplateValue = this._updateTemplateValue.bind(this);
+    // Parse arguments first (no 'this' access)
     let layer = null;
     let properties = {};
     let options = {};
@@ -138,10 +116,27 @@ export class Animation extends BaseClass {
     delete options.properties;
     delete options.options;
 
+    // Call super() FIRST before any 'this' access
+    super();
+
+    // Now safe to bind methods and set properties
+    this.start = this.start.bind(this);
+    this._instant = this._instant.bind(this);
+    this._noop = this._noop.bind(this);
+    this._start = this._start.bind(this);
+    this.finish = this.finish.bind(this);
+    this._update = this._update.bind(this);
+    this._prepareUpdateValues = this._prepareUpdateValues.bind(this);
+    this._updateValues = this._updateValues.bind(this);
+    this._updateNumberValue = this._updateNumberValue.bind(this);
+    this._calculateNumericObjectValue = this._calculateNumericObjectValue.bind(this);
+    this._updateNumericObjectValue = this._updateNumericObjectValue.bind(this);
+    this._updateColorValue = this._updateColorValue.bind(this);
+    this._updateGradientValue = this._updateGradientValue.bind(this);
+    this._updateShadows = this._updateShadows.bind(this);
+    this._updateTemplateValue = this._updateTemplateValue.bind(this);
+
     this.options = _.cloneDeep(Defaults.getDefaults("Animation", options));
-
-    super(...arguments);
-
     this._layer = layer;
 
     if (!(layer instanceof _Layer)) {

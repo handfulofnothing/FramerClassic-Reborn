@@ -1,7 +1,7 @@
-import { SVG } from "./SVG";
-import { SVGBaseLayer } from "./SVGBaseLayer";
-import { SVGPath } from "./SVGPath";
-import Utils from "./Utils";
+import { SVG } from "./SVG.js";
+import { SVGBaseLayer } from "./SVGBaseLayer.js";
+import { SVGPath } from "./SVGPath.js";
+import Utils from "./Utils.js";
 
 export class SVGGroup extends SVGBaseLayer {
   static initClass() {

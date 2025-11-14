@@ -235,6 +235,7 @@ export class LayerDraggable extends BaseClass {
   }
 
   constructor(layer) {
+    super();
     this.panStart = this.panStart.bind(this);
     this.touchStart = this.touchStart.bind(this);
     this.tapStart = this.tapStart.bind(this);
@@ -248,8 +249,6 @@ export class LayerDraggable extends BaseClass {
     this._stopSimulation = this._stopSimulation.bind(this);
     this.layer = layer;
     const options = Defaults.getDefaults("LayerDraggable", {});
-
-    super(options);
 
     _.extend(this, options);
 

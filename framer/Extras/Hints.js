@@ -1,17 +1,21 @@
-import { Context } from "../Context";
-import Utils from "../Utils";
+import { _ } from "../Underscore.js";
+import { Context } from "../Context.js";
+import { Events } from "../Events.js";
+import Utils from "../Utils.js";
 
 let hints = null;
 
 export default class Hints {
   _context = null;
   _target = null;
+  _framerContext = null;
 
-  constructor() {
+  constructor(framerContext) {
+    this._framerContext = framerContext;
     this._handleDown = this._handleDown.bind(this);
     this._handleUp = this._handleUp.bind(this);
 
-    this._context = new Framer.Context({ name: "Hints" });
+    this._context = new Context({ name: "Hints" });
     this._context.index = 10000;
 
     this._context.run(() => {
@@ -29,13 +33,17 @@ export default class Hints {
   _handleUp(event) {
     if (this._isPreloading()) return;
 
-    const layer = Framer.CurrentContext.layerForElement(this._target);
+    const currentContext = this._framerContext || (typeof Framer !== 'undefined' ? Framer.CurrentContext : null);
+    if (!currentContext) return;
+
+    const layer = currentContext.layerForElement(this._target);
 
     if (!layer) {
       for (const context of Context.all()) {
+        const defaultContext = typeof Framer !== 'undefined' ? Framer.DefaultContext : null;
         if (
-          context !== Framer.DefaultContext &&
-          context !== Framer.CurrentContext &&
+          context !== defaultContext &&
+          context !== currentContext &&
           context.layerForElement(this._target)
         ) {
           return;
@@ -49,13 +57,16 @@ export default class Hints {
   }
 
   _isPreloading() {
+    if (typeof Framer === 'undefined') return false;
     return Framer.Preloader?.isLoading === true;
   }
 
   showHints() {
-    const context = Framer.CurrentContext;
+    const currentContext = this._framerContext || (typeof Framer !== 'undefined' ? Framer.CurrentContext : null);
+    if (!currentContext) return;
+
     this._context.run(() => {
-      _.invokeMap(context.rootLayers, "_showHint");
+      _.invokeMap(currentContext.rootLayers, "_showHint");
     });
   }
 
@@ -64,9 +75,9 @@ export default class Hints {
   }
 }
 
-export const enable = () => {
+export const enable = (framerContext) => {
   if (hints) return hints;
-  hints = new Hints(Framer.CurrentContext);
+  hints = new Hints(framerContext);
   return hints;
 };
 

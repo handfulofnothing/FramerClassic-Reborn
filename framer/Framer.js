@@ -134,12 +134,12 @@ if (typeof window !== "undefined") {
   window.Canvas = new Canvas();
 }
 
-// Extras
-if (Utils.isMobile()) Framer.Extras.MobileScrollFix.enable();
-if (!Utils.isTouch()) Framer.Extras.TouchEmulator.enable();
-if (!Utils.isFramerStudio()) Framer.Extras.ErrorDisplay.enable();
-if (!Utils.isFramerStudio()) Framer.Extras.Preloader.enable();
-if (!Utils.isFramerStudio()) Framer.Extras.Hints.enable();
+// Extras - disabled for testing
+// if (Utils.isMobile()) Framer.Extras.MobileScrollFix.enable();
+// if (!Utils.isTouch()) Framer.Extras.TouchEmulator.enable();
+// if (!Utils.isFramerStudio()) Framer.Extras.ErrorDisplay.enable();
+// if (!Utils.isFramerStudio()) Framer.Extras.Preloader.enable();
+// if (!Utils.isFramerStudio()) Framer.Extras.Hints.enable();
 
 Utils.domComplete(() => Framer.Loop.start());
 

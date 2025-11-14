@@ -4,8 +4,8 @@ import { Integrator } from "../Integrator.js";
 
 export class FrictionSimulator extends Simulator {
   constructor(...args) {
-    this.finished = this.finished.bind(this);
     super(...args);
+    this.finished = this.finished.bind(this);
   }
 
   setup(options) {

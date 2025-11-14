@@ -6,8 +6,8 @@ import { FrictionSimulator } from "./FrictionSimulator.js";
 
 export class MomentumBounceSimulator extends Simulator {
   constructor(...args) {
-    this.finished = this.finished.bind(this);
     super(...args);
+    this.finished = this.finished.bind(this);
   }
 
   setup(options) {

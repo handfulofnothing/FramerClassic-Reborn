@@ -272,13 +272,13 @@ export class Context extends BaseClass {
   }
 
   constructor(options) {
-    this.layout = this.layout.bind(this);
     if (options == null) {
       options = {};
     }
     options = Defaults.getDefaults("Context", options);
-
-    super(...arguments);
+    super(options);
+    
+    this.layout = this.layout.bind(this);
 
     if (!options.name) {
       throw Error("Contexts need a name");

@@ -31,6 +31,7 @@ const layerValueTypeError = function (name, value) {
 };
 
 export const layerProperty = function (
+  layer,
   name,
   cssProperty,
   fallback,
@@ -74,7 +75,7 @@ export const layerProperty = function (
         return;
       }
 
-      if (value && validator && !validator(value)) {
+      if (value && validator && typeof validator === 'function' && !validator(value)) {
         layerValueTypeError(name, value);
       }
 
@@ -93,7 +94,7 @@ export const layerProperty = function (
         if (targetElement != null) {
           subElement = elementContainer[targetElement];
         }
-        if (name === cssProperty && LayerStyle[cssProperty] == null) {
+        if (name === cssProperty && (LayerStyle[cssProperty] == null || typeof LayerStyle[cssProperty] !== 'function')) {
           if (mainElement != null) {
             mainElement.style[cssProperty] = this._properties[name];
           }
@@ -102,8 +103,9 @@ export const layerProperty = function (
           }
           // These values are set multiple times during applyDefaults, so ignore them here, and set the style in the constructor
         } else if (
-          !this.__applyingDefaults ||
-          !Array.from(delayedStyles).includes(cssProperty)
+          typeof LayerStyle[cssProperty] === 'function' &&
+          (!this.__applyingDefaults ||
+          !Array.from(delayedStyles).includes(cssProperty))
         ) {
           const style = LayerStyle[cssProperty](this);
           if (mainElement != null) {
@@ -156,8 +158,6 @@ export var layerProxiedValue = function (value, layer, property) {
     return (layer[property] = proxiedValue);
   });
 };
-
-exports.layerProxiedValue = layerProxiedValue;
 
 const layerPropertyPointTransformer = function (value, layer, property) {
   if (_.isFunction(value)) {
@@ -1280,7 +1280,7 @@ export class Layer extends BaseClass {
         const currentValue = this._getPropertyValue("image");
         const defaults = Defaults.getDefaults("Layer", {});
         const isBackgroundColorDefault =
-          this.backgroundColor != null
+          this.backgroundColor != null && typeof this.backgroundColor.isEqual === 'function'
             ? this.backgroundColor.isEqual(defaults.backgroundColor)
             : undefined;
 
@@ -1421,7 +1421,7 @@ export class Layer extends BaseClass {
         }
 
         // Check the type
-        if (!layer instanceof Layer) {
+        if (layer && !(layer instanceof Layer)) {
           throw Error("Layer.parent needs to be a Layer object");
         }
 
@@ -1438,6 +1438,12 @@ export class Layer extends BaseClass {
 
         // Either insert the element to the new parent element or into dom
         if (layer) {
+          // Ensure parent layer is properly initialized
+          if (!layer._element) {
+            console.warn("Layer.parent: parent layer not properly initialized, skipping appendChild");
+            this._parent = layer;
+            return;
+          }
           layer._element.appendChild(this._element);
           layer._children.push(this);
           layer.emit("change:children", { added: [this], removed: [] });
@@ -1671,6 +1677,10 @@ export class Layer extends BaseClass {
   }
 
   constructor(options) {
+    // In ES6, we must call super() before accessing 'this'
+    // Don't pass options yet - we need to initialize _properties first
+    super();
+    
     // Make sure we never call the constructor twice
     this.parentChanged = this.parentChanged.bind(this);
     this._layoutX = this._layoutX.bind(this);
@@ -1693,7 +1703,7 @@ export class Layer extends BaseClass {
     this.__constructorCalled = true;
     this.__constructor = true;
 
-    // Set needed private variables
+    // Set needed private variables BEFORE applying defaults
     this._properties = {};
     this._style = {};
     this._children = [];
@@ -1736,7 +1746,7 @@ export class Layer extends BaseClass {
     }
 
     this.__applyingDefaults = true;
-    super(Defaults.getDefaults("Layer", options));
+    this._applyDefaults(Defaults.getDefaults("Layer", options));
     delete this.__applyingDefaults;
 
     for (var cssProperty of Array.from(delayedStyles)) {

@@ -252,10 +252,13 @@ export class BaseClass extends EventEmitter {
     this._getPropertyValue = this._getPropertyValue.bind(this);
     this.toInspect = this.toInspect.bind(this);
 
-    this._context =
-      typeof Framer !== "undefined" && Framer !== null
-        ? Framer.CurrentContext
-        : undefined;
+    // Check for Framer in window (for browser) or global scope
+    this._context = undefined;
+    if (typeof window !== "undefined" && window.Framer?.CurrentContext) {
+      this._context = window.Framer.CurrentContext;
+    } else if (typeof globalThis !== "undefined" && globalThis.Framer?.CurrentContext) {
+      this._context = globalThis.Framer.CurrentContext;
+    }
 
     // Create a holder for the property values
     this[DefinedPropertiesValuesKey] = {};

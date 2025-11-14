@@ -1,11 +1,13 @@
 import _ from "./Underscore.js";
-import EventEmitter3 from "eventemitter3";
-
-const EventKey = "_events";
+import EventEmitter3 from "./EventEmitter3.js";
 
 export class EventEmitter extends EventEmitter3 {
+  constructor() {
+    super();
+  }
+
   listenerEvents() {
-    return _.keys(this[EventKey] ?? {});
+    return this.eventNames();
   }
 
   removeAllListeners(eventName) {

@@ -222,6 +222,7 @@ export class DeviceComponent extends BaseClass {
   }
 
   constructor(options) {
+    super();
     this._update = this._update.bind(this);
     this.customize = this.customize.bind(this);
     this._updateDeviceImage = this._updateDeviceImage.bind(this);
@@ -581,7 +582,8 @@ export class DeviceComponent extends BaseClass {
   }
 
   _updateDeviceImage() {
-    if (/PhantomJS/.test(navigator.userAgent)) {
+    // Skip device image updates in test/headless environments
+    if (typeof navigator === 'undefined' || /Headless/.test(navigator.userAgent)) {
       return;
     }
 
@@ -2381,6 +2383,6 @@ var Devices = {
   "applewatchedition-42-gold-sportband-white": _.clone(old_AppleWatch42Device),
 };
 
-exports.DeviceComponent.Devices = Devices;
+DeviceComponent.Devices = Devices;
 
 var BuiltInDevices = _.keys(Devices);

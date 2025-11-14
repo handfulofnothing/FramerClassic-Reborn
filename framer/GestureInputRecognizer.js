@@ -714,18 +714,34 @@ export class GestureInputRecognizer {
 
     // Convert point style event properties to dom style:
     // event.delta -> event.deltaX, event.deltaY
-    for (var pointKey of [
-      "point",
-      "start",
-      "previous",
-      "offset",
-      "delta",
-      "velocity",
-      "touchCenter",
-      "touchOffset",
-    ]) {
-      event[`${pointKey}X`] = event[pointKey].x;
-      event[`${pointKey}Y`] = event[pointKey].y;
+    // Create new properties on the event object
+    try {
+      for (var pointKey of [
+        "point",
+        "start",
+        "previous",
+        "offset",
+        "delta",
+        "velocity",
+        "touchCenter",
+        "touchOffset",
+      ]) {
+        const point = event[pointKey];
+        if (point) {
+          // Try to set directly, fallback to Object.defineProperty
+          try {
+            event[`${pointKey}X`] = point.x;
+            event[`${pointKey}Y`] = point.y;
+          } catch (e) {
+            // If property is read-only, define new property
+            Object.defineProperty(event, `${pointKey}X`, { value: point.x, writable: false, enumerable: true });
+            Object.defineProperty(event, `${pointKey}Y`, { value: point.y, writable: false, enumerable: true });
+          }
+        }
+      }
+    } catch (err) {
+      // Silently handle any remaining property errors
+      console.warn('GestureInputRecognizer: Could not set event properties', err);
     }
 
     return event;
@@ -809,9 +825,20 @@ export class GestureInputRecognizer {
     touchEvent.changedTouches = event.touches;
     touchEvent.targetTouches = event.touches;
 
+    // Copy custom properties safely (skip read-only browser properties)
+    const readOnlyProps = ['isTrusted', 'type', 'target', 'currentTarget', 'eventPhase', 
+                           'bubbles', 'cancelable', 'defaultPrevented', 'composed',
+                           'timeStamp', 'srcElement', 'returnValue', 'cancelBubble'];
+    
     for (var k in event) {
-      var v = event[k];
-      touchEvent[k] = v;
+      if (readOnlyProps.includes(k)) continue;
+      
+      try {
+        var v = event[k];
+        touchEvent[k] = v;
+      } catch (e) {
+        // Skip properties that can't be set
+      }
     }
 
     return touchEvent;

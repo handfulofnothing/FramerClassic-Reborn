@@ -1,6 +1,6 @@
-import { BaseClass } from "./BaseClass";
-import { Events } from "./Events";
-import { Utils } from "./Utils";
+import { BaseClass } from "./BaseClass.js";
+import { Events } from "./Events.js";
+import { Utils } from "./Utils.js";
 
 export class AnimationGroup extends BaseClass {
   constructor(...args) {

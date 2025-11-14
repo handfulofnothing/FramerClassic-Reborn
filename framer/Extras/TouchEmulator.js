@@ -1,5 +1,8 @@
-import Utils from "../Utils";
-import { BaseClass } from "../BaseClass";
+import Utils from "../Utils.js";
+import { BaseClass } from "../BaseClass.js";
+import { Context } from "../Context.js";
+import { Layer } from "../Layer.js";
+import { Events } from "../Events.js";
 
 const createTouch = (event, identifier, offset = { x: 0, y: 0 }) => {
   const touch = {
@@ -58,7 +61,7 @@ const cancelEvent = (event) => {
 };
 
 class TouchEmulator extends BaseClass {
-  constructor() {
+  constructor(context) {
     super();
 
     this.keydown = this.keydown.bind(this);
@@ -77,7 +80,7 @@ class TouchEmulator extends BaseClass {
     this.keyPinchCode = 18; // Alt
     this.keyPanCode = 91; // Command
 
-    this.context = new Framer.Context({ name: "TouchEmulator" });
+    this.context = context || new Context({ name: "TouchEmulator" });
     this.context._element.style.zIndex = 10000;
     this.wrap = this.context.domEventManager.wrap;
 

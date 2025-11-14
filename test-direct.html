@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Framer Test</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: sans-serif;
+            background: #000;
+            color: #fff;
+        }
+        #container {
+            width: 600px;
+            height: 400px;
+            background: #111;
+            border: 2px solid #333;
+            position: relative;
+        }
+        button {
+            margin: 10px 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #1a1a1a;
+            border-left: 4px solid #43e97b;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Framer.js Direct Test</h1>
+    <div id="status">Loading Framer.js...</div>
+    
+    <button onclick="testBasicLayer()">Test 1: Create Layer</button>
+    <button onclick="testAnimation()">Test 2: Animate</button>
+    <button onclick="testSpring()">Test 3: Spring</button>
+    
+    <div id="container"></div>
+
+    <script type="module">
+        let Framer;
+        let currentLayer;
+
+        // Load Framer
+        import('../dist/framer.js').then(module => {
+            Framer = module.default;
+            console.log('✓ Framer loaded:', Framer);
+            console.log('✓ Framer.Layer:', Framer.Layer);
+            document.getElementById('status').innerHTML = '✅ Framer.js loaded successfully!';
+            document.getElementById('status').style.borderColor = '#43e97b';
+        }).catch(err => {
+            console.error('✗ Failed to load:', err);
+            document.getElementById('status').innerHTML = '❌ Error: ' + err.message;
+            document.getElementById('status').style.borderColor = '#ff6b6b';
+        });
+
+        window.testBasicLayer = function() {
+            try {
+                const container = document.getElementById('container');
+                container.innerHTML = '';
+                
+                console.log('Creating layer...');
+                currentLayer = new Framer.Layer({
+                    parent: container,
+                    x: 100,
+                    y: 100,
+                    width: 100,
+                    height: 100,
+                    backgroundColor: '#667eea',
+                    borderRadius: 10
+                });
+                
+                console.log('✓ Layer created:', currentLayer);
+                document.getElementById('status').innerHTML = '✅ Layer created successfully!';
+            } catch (error) {
+                console.error('✗ Error:', error);
+                document.getElementById('status').innerHTML = '❌ Error: ' + error.message;
+                document.getElementById('status').style.borderColor = '#ff6b6b';
+            }
+        };
+
+        window.testAnimation = function() {
+            if (!currentLayer) {
+                testBasicLayer();
+                setTimeout(() => testAnimation(), 100);
+                return;
+            }
+
+            try {
+                console.log('Animating...');
+                currentLayer.animate({
+                    properties: { x: 400 },
+                    curve: 'ease-in-out',
+                    time: 1
+                });
+                document.getElementById('status').innerHTML = '✅ Animation started!';
+            } catch (error) {
+                console.error('✗ Error:', error);
+                document.getElementById('status').innerHTML = '❌ Error: ' + error.message;
+                document.getElementById('status').style.borderColor = '#ff6b6b';
+            }
+        };
+
+        window.testSpring = function() {
+            if (!currentLayer) {
+                testBasicLayer();
+                setTimeout(() => testSpring(), 100);
+                return;
+            }
+
+            try {
+                console.log('Spring animation...');
+                currentLayer.animate({
+                    properties: { 
+                        y: 250,
+                        rotation: 180,
+                        scale: 1.5
+                    },
+                    curve: 'spring(300, 20, 0)',
+                    time: 2
+                });
+                document.getElementById('status').innerHTML = '✅ Spring animation started!';
+            } catch (error) {
+                console.error('✗ Error:', error);
+                document.getElementById('status').innerHTML = '❌ Error: ' + error.message;
+                document.getElementById('status').style.borderColor = '#ff6b6b';
+            }
+        };
+    </script>
+</body>
+</html>

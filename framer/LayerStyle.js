@@ -235,7 +235,7 @@ export const LayerStyle = {
     // results.
 
     if (layer._prefer2d || layer._properties.force2d) {
-      return exports.LayerStyle.webkitTransformForce2d(layer);
+      return LayerStyle.webkitTransformForce2d(layer);
     }
     const dpr =
       layer._pixelMultiplierOverride != null

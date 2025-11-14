@@ -1,4 +1,4 @@
-import { Layer } from "./Layer";
+import { Layer } from "./Layer.js";
 
 `\
 Todo: make it work in a parent layer\

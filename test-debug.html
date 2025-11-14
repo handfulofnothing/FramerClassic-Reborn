@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Framer Build - Debug Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #4ec9b0;
+            border-bottom: 2px solid #4ec9b0;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #dcdcaa;
+            margin-top: 30px;
+        }
+        .success {
+            color: #4ec9b0;
+            background: #1e3a32;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #4ec9b0;
+        }
+        .error {
+            color: #f48771;
+            background: #3a1e1e;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #f48771;
+        }
+        .info {
+            color: #9cdcfe;
+            background: #1e2a3a;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #9cdcfe;
+        }
+        pre {
+            background: #252526;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid #3e3e42;
+        }
+        .exports-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .export-item {
+            background: #252526;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            border: 1px solid #3e3e42;
+        }
+        .type {
+            color: #569cd6;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Framer Library - Debug Test</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = message;
+            output.appendChild(div);
+        }
+
+        function logPre(title, content) {
+            log(`<h2>${title}</h2><pre>${content}</pre>`, 'info');
+        }
+
+        try {
+            log('⏳ Starting module import...', 'info');
+            
+            // Dynamic import to catch errors
+            const module = await import('./dist/framer.js');
+            
+            log('✅ Module imported successfully!', 'success');
+            
+            // Check what we got
+            log(`<h2>📦 Module Structure</h2>`, 'info');
+            log(`Module type: ${typeof module}`, 'info');
+            log(`Module is null: ${module === null}`, 'info');
+            log(`Module is undefined: ${module === undefined}`, 'info');
+            
+            // Check for default export
+            if (module.default) {
+                log('✅ Default export found!', 'success');
+                log(`Default export type: ${typeof module.default}`, 'info');
+                
+                const Framer = module.default;
+                const keys = Object.keys(Framer);
+                
+                log(`<h2>🔑 Exported Keys (${keys.length} total)</h2>`, 'success');
+                
+                // Display all exports in a grid
+                const exportsHtml = keys.map(key => {
+                    const value = Framer[key];
+                    const type = typeof value;
+                    let typeDisplay = type;
+                    
+                    if (type === 'function') {
+                        typeDisplay = value.prototype ? 'class' : 'function';
+                    } else if (type === 'object' && value !== null) {
+                        typeDisplay = Array.isArray(value) ? 'array' : 'object';
+                    }
+                    
+                    return `<div class="export-item"><strong>${key}</strong><br/><span class="type">${typeDisplay}</span></div>`;
+                }).join('');
+                
+                log(`<div class="exports-list">${exportsHtml}</div>`, 'info');
+                
+                // Show some important ones
+                log('<h2>🎯 Key Components</h2>', 'info');
+                const important = ['Layer', 'Animation', 'Color', 'Utils', 'Context', 'Version'];
+                important.forEach(key => {
+                    if (Framer[key]) {
+                        log(`✅ ${key}: ${typeof Framer[key]}`, 'success');
+                    } else {
+                        log(`❌ ${key}: not found`, 'error');
+                    }
+                });
+                
+                // Check Version info
+                if (Framer.Version) {
+                    const version = Framer.Version;
+                    logPre('📋 Version Info', JSON.stringify({
+                        branch: version.branch,
+                        hash: version.hash,
+                        build: version.build,
+                        date: new Date(version.date * 1000).toLocaleString()
+                    }, null, 2));
+                }
+                
+                // Test creating a simple element
+                log('<h2>🧪 Functionality Test</h2>', 'info');
+                
+                // Create test element
+                const testDiv = document.createElement('div');
+                testDiv.style.cssText = `
+                    width: 200px;
+                    height: 100px;
+                    background: linear-gradient(135deg, #4ec9b0 0%, #569cd6 100%);
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    margin: 20px 0;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                    animation: glow 2s ease-in-out infinite;
+                `;
+                testDiv.textContent = '✨ Build Success!';
+                output.appendChild(testDiv);
+                
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes glow {
+                        0%, 100% { box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+                        50% { box-shadow: 0 8px 20px rgba(78, 201, 176, 0.5); }
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                log('✅ Visual test element created!', 'success');
+                
+            } else {
+                log('❌ No default export found', 'error');
+                log('Available named exports: ' + Object.keys(module).join(', '), 'info');
+            }
+            
+            log('<h2>🎉 Debug Complete!</h2>', 'success');
+            log('The build is working correctly. Check the console for more details.', 'success');
+            
+            console.log('Full module:', module);
+            console.log('Default export:', module.default);
+            
+        } catch (error) {
+            log(`❌ Error: ${error.message}`, 'error');
+            log(`<pre>${error.stack}</pre>`, 'error');
+            console.error('Import error:', error);
+        }
+    </script>
+</body>
+</html>

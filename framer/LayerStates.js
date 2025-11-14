@@ -1,5 +1,5 @@
-import { _ } from "./Underscore";
-import { LayerStateMachine } from "./LayerStateMachine";
+import { _ } from "./Underscore.js";
+import { LayerStateMachine } from "./LayerStateMachine.js";
 const LayerStatesIgnoredKeys = ["ignoreEvents", "name", "id"];
 
 const reservedStateError = function (name) {
@@ -16,12 +16,12 @@ const deprecatedWarning = function (name, suggestion) {
 
 const namedState = (state, name) => _.extend({}, { name }, state);
 
-export const LayerStates = (function () {
-  let capture = undefined;
-  let methods = undefined;
-  LayerStates = class LayerStates {
-    static initClass() {
-      this.defineReserved("previous", {
+let capture;
+let methods;
+
+class LayerStatesClass {
+  static initClass() {
+    this.defineReserved("previous", {
         get() {
           return namedState(
             this[this.machine.previousName],
@@ -39,7 +39,7 @@ export const LayerStates = (function () {
       });
 
       capture = function (name) {
-        return (this[name] = LayerStates.filterStateProperties(
+        return (this[name] = LayerStatesClass.filterStateProperties(
           this.machine.layer.props
         ));
       };
@@ -160,8 +160,8 @@ export const LayerStates = (function () {
     static filterStateProperties(properties) {
       const stateProperties = {};
 
-      for (var k in properties) {
-        var v = properties[k];
+      for (const k in properties) {
+        const v = properties[k];
         if (Array.from(LayerStatesIgnoredKeys).includes(k)) {
           continue;
         }
@@ -217,10 +217,11 @@ export const LayerStates = (function () {
       }
       return false;
     }
-  };
-  LayerStates.initClass();
-  return LayerStates;
-})();
+  }
+
+LayerStatesClass.initClass();
+
+export const LayerStates = LayerStatesClass;
 
 function __guard__(value, transform) {
   return typeof value !== "undefined" && value !== null

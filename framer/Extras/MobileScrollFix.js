@@ -1,3 +1,5 @@
+import { Layer } from "../Layer.js";
+
 const handleScrollingLayerTouchMove = (event) => event.stopPropagation();
 
 const handleScrollingLayerTouchStart = function () {
@@ -13,7 +15,7 @@ const handleScrollingLayerTouchStart = function () {
   }
 };
 
-export class MobileScrollFixLayer extends Framer.Layer {
+export class MobileScrollFixLayer extends Layer {
   constructor(options) {
     super(options);
     this._updateScrollListeners = this._updateScrollListeners.bind(this);
@@ -49,5 +51,7 @@ export const enableMobileScrollFix = () => {
     }
   };
 };
+
+export const enable = enableMobileScrollFix;
 
 export default MobileScrollFixLayer;

@@ -1,11 +1,12 @@
-const { BezierCurveAnimator } = require("./BezierCurveAnimator");
-const {
+import { BezierCurveAnimator } from "./BezierCurveAnimator.js";
+import {
   computeDerivedCurveOptions,
   computeDuration,
   computeDampingRatio,
-} = require("./SpringCurveValueConverter");
-const { SpringRK4Animator } = require("./SpringRK4Animator");
-const { Defaults } = require("../Defaults");
+} from "./SpringCurveValueConverter.js";
+import { SpringRK4Animator } from "./SpringRK4Animator.js";
+import { Defaults } from "../Defaults.js";
+import { _ } from "../Underscore.js";
 
 const Bezier = (...values) =>
   function (options) {
@@ -15,7 +16,9 @@ const Bezier = (...values) =>
     if (values.length > 0) {
       options.values = values;
     }
-    return new BezierCurveAnimator(options);
+    const animator = new BezierCurveAnimator();
+    animator.setup(options);
+    return animator;
   };
 
 // We define each in a seperate function here
@@ -97,7 +100,8 @@ const Spring = function (dampingRatio, mass, velocity) {
       }
     }
     options = _.defaults(curveOptions, options);
-    const animator = new SpringRK4Animator(options);
+    const animator = new SpringRK4Animator();
+    animator.setup(options);
     if (duration != null) {
       animator.time = duration;
     }

@@ -1,5 +1,5 @@
 import { Animator } from "./Animator.js";
-import _ from "lodash"; // assuming lodash is available
+import _ from "lodash-es"; // assuming lodash-es is available
 
 export class SpringDHOAnimator extends Animator {
   _time = 0;

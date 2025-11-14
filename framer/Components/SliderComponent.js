@@ -1,6 +1,6 @@
-const Utils = require("../Utils");
-const { Layer } = require("../Layer");
-const { Events } = require("../Events");
+import { Utils } from "../Utils.js";
+import { Layer } from "../Layer.js";
+import { Events } from "../Events.js";
 
 `\
 SliderComponent

@@ -1,6 +1,6 @@
-import { LayerStyle } from "./LayerStyle";
-import { Layer, layerProperty } from "./Layer";
-import Utils from "./Utils";
+import { LayerStyle } from "./LayerStyle.js";
+import { Layer, layerProperty } from "./Layer.js";
+import Utils from "./Utils.js";
 
 let _svgMeasureElement = null;
 

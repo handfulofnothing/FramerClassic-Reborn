@@ -42,15 +42,30 @@ export const version = \`\${branch}/\${hash}\`;
 }
 
 export default defineConfig({
+  optimizeDeps: {
+    include: ['eventemitter3', 'hsluv', 'webfontloader'],
+    esbuildOptions: {
+      target: 'es2020'
+    }
+  },
   build: {
+    target: 'es2020',
     lib: {
       entry: "framer/Framer.js",
       name: "Framer",
-      fileName: "framer",
-      // just one JS file
+      fileName: () => "framer.js",
+      formats: ["es"],
     },
     sourcemap: true,
+    commonjsOptions: {
+      transformMixedEsModules: true,
+      include: [/node_modules/],
+    },
     rollupOptions: {
+      output: {
+        format: 'es',
+        inlineDynamicImports: true,
+      },
       plugins: [
         {
           name: "generate-version-file",
@@ -65,8 +80,15 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
-    setupFiles: "test/setup.js", // <-- include your new test bootstrap
+    setupFiles: ["./test/setup.js"],
     include: ["test/**/*.test.js"],
+    pool: "threads",
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
+    testTimeout: 10000,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

@@ -1,6 +1,6 @@
-import { Utils } from "./Utils";
-import { Context } from "./Context";
-import { Layer } from "./Layer";
+import { Utils } from "./Utils.js";
+import { Context } from "./Context.js";
+import { Layer } from "./Layer.js";
 
 class Printer {
   constructor() {

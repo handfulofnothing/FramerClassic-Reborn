@@ -1,6 +1,7 @@
-import { Layer, layerProperty } from "./Layer";
-import { LayerStyle } from "./LayerStyle";
-import { StyledText } from "./StyledText";
+import { Layer, layerProperty } from "./Layer.js";
+import { LayerStyle } from "./LayerStyle.js";
+import { StyledText } from "./StyledText.js";
+import { _ } from "./Underscore.js";
 
 const validateFont = (arg) => _.isString(arg) || _.isObject(arg);
 
@@ -100,7 +101,7 @@ export class TextLayer extends Layer {
       },
       set(value) {
         if (!(value instanceof StyledText)) {
-          return;
+          value = new StyledText(value);
         }
         return (this.__styledText = value);
       },
@@ -375,9 +376,6 @@ export class TextLayer extends Layer {
 
   constructor(options) {
     let fontWeight, lineHeight;
-    this.updateAutoWidth = this.updateAutoWidth.bind(this);
-    this.updateAutoHeight = this.updateAutoHeight.bind(this);
-    this.renderText = this.renderText.bind(this);
     if (options == null) {
       options = {};
     }
@@ -386,36 +384,35 @@ export class TextLayer extends Layer {
       clip: false,
       createHTMLElement: true,
     });
+    
+    // Handle styledText options before super() call
     if (options.styledTextOptions != null) {
       options.styledText = options.styledTextOptions;
       delete options.styledTextOptions;
     }
+    
+    // Ensure styledText is a StyledText instance
+    if (options.styledText && !(options.styledText instanceof StyledText)) {
+      options.styledText = new StyledText(options.styledText);
+    }
+    
+    // For styledText, we need to extract properties before super() but can't access this yet
+    let styledTextColor, styledTextFontSize, styledTextFontFamily, styledTextLetterSpacing, styledTextTextAlign;
     if (options.styledText != null) {
       delete options.text;
-      this.styledTextOptions = options.styledText;
-      if (options.color == null) {
-        options.color = this._styledText.getStyle("color");
-      }
-      if (options.fontSize == null) {
-        options.fontSize = parseFloat(this._styledText.getStyle("fontSize"));
-      }
-      if (options.fontFamily == null) {
-        options.fontFamily = this._styledText.getStyle("fontFamily");
-      }
-      if (options.letterSpacing == null) {
-        options.letterSpacing = parseFloat(
-          this._styledText.getStyle("letterSpacing")
-        );
-      }
-      if (options.textAlign == null) {
-        options.textAlign = this._styledText.textAlign;
-      }
-      fontWeight = this._styledText.getStyle("fontWeight");
+      // Extract values from styledText object before super() call
+      styledTextColor = options.styledText.getStyle("color");
+      styledTextFontSize = parseFloat(options.styledText.getStyle("fontSize"));
+      styledTextFontFamily = options.styledText.getStyle("fontFamily");
+      styledTextLetterSpacing = parseFloat(options.styledText.getStyle("letterSpacing"));
+      styledTextTextAlign = options.styledText.textAlign;
+      
+      fontWeight = options.styledText.getStyle("fontWeight");
       if (fontWeight != null) {
         options.fontWeight = parseFloat(fontWeight);
       }
 
-      lineHeight = this._styledText.getStyle("lineHeight");
+      lineHeight = options.styledText.getStyle("lineHeight");
       if (lineHeight == null || lineHeight === "normal") {
         lineHeight = 1.25;
       } else {
@@ -435,17 +432,43 @@ export class TextLayer extends Layer {
         padding: 0,
       });
       if (options.font == null && options.fontFamily == null) {
-        options.fontFamily = this.defaultFont();
+        options.fontFamily = "Helvetica";
       }
+    }
 
+    super(options);
+    
+    // Now we can access 'this' after super()
+    this.updateAutoWidth = this.updateAutoWidth.bind(this);
+    this.updateAutoHeight = this.updateAutoHeight.bind(this);
+    this.renderText = this.renderText.bind(this);
+    
+    if (options.styledText != null) {
+      this.styledTextOptions = options.styledText;
+      // Set the extracted values
+      if (options.color == null && styledTextColor != null) {
+        this.color = styledTextColor;
+      }
+      if (options.fontSize == null && styledTextFontSize != null) {
+        this.fontSize = styledTextFontSize;
+      }
+      if (options.fontFamily == null && styledTextFontFamily != null) {
+        this.fontFamily = styledTextFontFamily;
+      }
+      if (options.letterSpacing == null && styledTextLetterSpacing != null) {
+        this.letterSpacing = styledTextLetterSpacing;
+      }
+      if (options.textAlign == null && styledTextTextAlign != null) {
+        this.textAlign = styledTextTextAlign;
+      }
+    } else {
       let { text } = options;
       if (!_.isString(text)) {
         text = String(text);
       }
       this._styledText.addBlock(text, { fontSize: `${options.fontSize}px` });
     }
-
-    super(options);
+    
     this.__constructor = true;
 
     // the goal is:
@@ -498,8 +521,8 @@ export class TextLayer extends Layer {
     this.renderText();
 
     // Executing function properties like Align.center again
-    for (var key in options) {
-      var value = options[key];
+    for (const key in options) {
+      const value = options[key];
       if (_.isFunction(value) && this[key] != null) {
         this[key] = value;
       }

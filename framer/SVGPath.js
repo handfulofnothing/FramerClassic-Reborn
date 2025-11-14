@@ -1,5 +1,6 @@
-import { SVGBaseLayer } from "./SVGBaseLayer";
-import { SVG } from "./SVG";
+import { SVGBaseLayer } from "./SVGBaseLayer.js";
+import { SVG } from "./SVG.js";
+import { layerProperty } from "./Layer.js";
 
 const dasharrayTransform = (value) => {
   if (typeof value === "string") {

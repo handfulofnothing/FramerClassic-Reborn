@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Framer Build Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        #container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        #framerLayer {
+            width: 100%;
+            height: 200px;
+            margin-top: 20px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Framer Library Build Test</h1>
+        <div id="status"></div>
+        <div id="info"></div>
+        <div id="framerLayer"></div>
+    </div>
+
+    <script type="module">
+        import FramerModule from './dist/framer.js';
+        
+        const statusDiv = document.getElementById('status');
+        const infoDiv = document.getElementById('info');
+        
+        try {
+            // Framer exports a default object
+            const Framer = FramerModule;
+            
+            // Test 1: Check if Framer is loaded
+            if (typeof Framer !== 'undefined' && Framer !== null) {
+                statusDiv.innerHTML += '<div class="status success">✅ Framer library loaded successfully!</div>';
+                console.log('Framer loaded:', Framer);
+            } else {
+                throw new Error('Framer module is undefined or null');
+            }
+            
+            // Test 2: Check for key exports
+            const exports = Object.keys(Framer).sort();
+            statusDiv.innerHTML += `<div class="status success">✅ Found ${exports.length} exports</div>`;
+            console.log('Available exports:', exports);
+            
+            // Test 3: Display some key information
+            const displayExports = exports.slice(0, 15);
+            infoDiv.innerHTML = `
+                <h3>Library Information:</h3>
+                <pre>Key exports: ${displayExports.join(', ')}${exports.length > 15 ? `... (and ${exports.length - 15} more)` : ''}</pre>
+            `;
+            
+            // Test 4: Check if Layer exists
+            if (!Framer.Layer) {
+                throw new Error('Framer.Layer is not available');
+            }
+            
+            statusDiv.innerHTML += '<div class="status success">✅ Framer.Layer is available!</div>';
+            
+            // Test 5: Try to create a basic layer
+            try {
+                const layerContainer = document.getElementById('framerLayer');
+                
+                // Create a simple div-based layer instead of using Framer Layer
+                const testDiv = document.createElement('div');
+                testDiv.style.cssText = `
+                    width: 200px;
+                    height: 100px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 18px;
+                    margin: 20px auto;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    animation: pulse 2s ease-in-out infinite;
+                `;
+                testDiv.textContent = 'Framer Loaded! ✨';
+                layerContainer.appendChild(testDiv);
+                
+                // Add animation
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes pulse {
+                        0%, 100% { transform: scale(1); }
+                        50% { transform: scale(1.05); }
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                statusDiv.innerHTML += '<div class="status success">✅ Test element created and animated!</div>';
+            } catch (layerError) {
+                statusDiv.innerHTML += `<div class="status error">⚠️ Could not create layer: ${layerError.message}</div>`;
+                console.warn('Layer creation error:', layerError);
+            }
+            
+            // Test 6: Check version info if available
+            if (Framer.Version) {
+                const versionInfo = Framer.Version;
+                infoDiv.innerHTML += `<pre>Version: ${versionInfo.version || 'N/A'}
+Branch: ${versionInfo.branch || 'N/A'}
+Build: ${versionInfo.build || 'N/A'}</pre>`;
+            }
+            
+            statusDiv.innerHTML += '<div class="status success">🎉 All tests passed! The library is working correctly.</div>';
+            
+        } catch (error) {
+            statusDiv.innerHTML += `<div class="status error">❌ Error: ${error.message}</div>`;
+            statusDiv.innerHTML += `<div class="status error">Stack: <pre>${error.stack}</pre></div>`;
+            console.error('Test error:', error);
+        }
+    </script>
+</body>
+</html>

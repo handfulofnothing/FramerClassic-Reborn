@@ -19,6 +19,7 @@ at setup({input values}), and emits an output state {x, v}\
   }
 
   constructor(options) {
+    super();
     if (options == null) {
       options = {};
     }

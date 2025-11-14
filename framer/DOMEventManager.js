@@ -28,7 +28,9 @@ class DOMEventManagerElement extends EventEmitter {
 
   removeListener(eventName, listener, capture = false) {
     super.removeListener(eventName, listener);
-    this.element.removeEventListener(eventName, listener.capture);
+    // Use the stored capture value or the passed one
+    const useCapture = listener.capture !== undefined ? listener.capture : capture;
+    this.element.removeEventListener(eventName, listener, useCapture);
   }
 }
 

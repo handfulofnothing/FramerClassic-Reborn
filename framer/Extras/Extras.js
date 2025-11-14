@@ -1,9 +1,9 @@
-import TouchEmulator from "./TouchEmulator";
-import MobileScrollFix from "./MobileScrollFix";
-import ErrorDisplay from "./ErrorDisplay";
-import OmitNew from "./OmitNew";
-import Hints from "./Hints";
-import Preloader from "./Preloader";
+import * as TouchEmulator from "./TouchEmulator.js";
+import * as MobileScrollFix from "./MobileScrollFix.js";
+import * as ErrorDisplay from "./ErrorDisplay.js";
+import OmitNew from "./OmitNew.js";
+import * as Hints from "./Hints.js";
+import * as Preloader from "./Preloader.js";
 
 export {
   TouchEmulator,

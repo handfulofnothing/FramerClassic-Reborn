@@ -1,52 +1,70 @@
-# Framer Library for React
+# Framer Library
 
-We are in the process of open sourcing our new [Framer Library for React](https://framer.com/api). Come back soon.
+Modern ES6 prototyping framework for interactive design.
+
+## Quick Start
+
+```bash
+npm install
+npm run dev    # Start development server
+npm run build  # Build framer.js
+npm test       # Run tests with Vitest
+```
+
+## Modern Stack (2025)
+
+- ✅ **ES6 Modules**: Full ESM/ES6 syntax throughout
+- ✅ **Vite 7.2.2**: Modern build tool
+- ✅ **Vitest 4.0.8**: Modern test runner  
+- ✅ **JSDOM 27**: Modern DOM simulation
+- ❌ Removed: CoffeeScript, Gulp, Webpack, PhantomJS, Mocha, Chai
+
+## Build Output
+
+- **Development**: `npm run dev` - Vite dev server
+- **Production**: `npm run build` - Generates `dist/framer.js` (~587 KB)
+
+## Project Structure
+
+```
+framer/               # Core library (ES6 modules)
+  ├── Framer.js      # Main entry point
+  ├── Layer.js       # Core layer class
+  ├── Animation.js   # Animation system
+  └── Components/    # Built-in components
+test/
+  ├── setup.js       # Vitest setup
+  └── tests/         # Test files (*.test.js)
+vite.config.js       # Build configuration
+```
+
+## Development
+
+The entire codebase has been modernized to ES6:
+- All `.coffee` files removed
+- ES6 classes with proper `super()` calls
+- ES6 modules (`import`/`export`)
+- Modern async/await patterns
+- Vitest for testing (replaces Mocha/Chai)
+
+## Testing
+
+```bash
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:ui       # UI mode
+npm run test:coverage # Coverage report
+```
+
+## License
+
+MIT
 
 ---
 
-# Framer Library
+### Legacy Note
 
-Framer Library is an open source JavaScript framework for high fidelity prototyping. Use it to design animations and interactions without any limitations. Make use of real spring physics or animate with 3D effects, anything is possible.
-<br /><br />
-
-![Example](https://raw.githubusercontent.com/krijnrijshouwer/FramerWiki/master/example.gif)
-<br /><br />
-
-There are 2 ways to use Framer Library. To get most out of Library download Framer; a design tool for the Mac. The other way you can leverage Framer Library is with generator; an app that imports your layers from Sketch, Photoshop and Figma. The following features are included with each option.
-<br /><br />
-
-![Table](https://raw.githubusercontent.com/krijnrijshouwer/FramerWiki/master/comparison-table@2x.png)
-<br /><br />
-
-## Framer
-
-Framer is a design tool for the Mac which allows you to design without limitations. It is based on Framer Library and offers the familiarity of visual editing with the flexibility of code. A seamless workflow, further complemented by device previewing, version control and easy sharing.
-
-[Find out more](http://framer.com/?utm_source=GitHub%2C%20framerjs%2C%20readme&utm_medium=Github)
-<br /><br />
-
-![Framer for Mac](https://cloud.githubusercontent.com/assets/22095598/26638904/a7ddf000-4623-11e7-8ad3-a0fb8f194e89.png)
-<br /><br />
-
-## Set up Framer Library
-
-- [Download](https://builds.framerjs.com/version/latest/Framer.zip?utm_source=GitHub%2C%20framerjs%2C%20readme&utm_medium=Github) (Framer.js & Framer Generator)
-- Open **index.html** in a WebKit browser and you'll see an image animate on click
-- Edit the **app.js** to add interactions and animations (see example code below)
-
-![Project Folder](https://raw.githubusercontent.com/krijnrijshouwer/FramerWiki/master/project.png)
-<br /><br />
-
-## Get Started
- 
-<img src="https://raw.githubusercontent.com/krijnrijshouwer/FramerWiki/master/icon-guide@2x.png" width="49px">
-
-[Learn with our beginner guides](https://framer.com/getstarted/guide/?utm_source=GitHub%2C%20framerjs%2C%20readme&utm_medium=Github) that give you a basic overview of Framer Library and a few simple pointers on how to set yourself up for success.
-<br /><br />
-
-<img src="https://raw.githubusercontent.com/krijnrijshouwer/FramerWiki/master/icon-community@2x.png" width="64px">
-
-[Become part of the community](https://framer.com/community/groups/?utm_source=GitHub%2C%20framerjs%2C%20readme&utm_medium=Github) and join the Facebook Group or engage with members in your city. Over 19.000 designers, engineers and creators are waiting to meet you.
+This is a modernized version of the original Framer.js library. The original was built with CoffeeScript and used legacy tools (Gulp, PhantomJS, Mocha, Chai). This version maintains compatibility while using modern JavaScript standards.
 
 <br /><br />
 
